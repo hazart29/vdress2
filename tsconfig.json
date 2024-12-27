@@ -1,0 +1,51 @@
+{
+  "compilerOptions": {
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "ESNext"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "ESNext",
+    "target": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@framework/*": [
+        "./src/app/framework/*"
+      ]
+    }
+  },
+  "types": [
+    "Core/live2dcubismcore"
+  ],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "public/Core/live2dcubismcore",
+    "public/Core/live2dcubismcore.d.ts",
+    "public/Core/*.ts",
+    "src/app/main/room/coba.d.ts"
+, "src/app/login/page.tsxaa"  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
