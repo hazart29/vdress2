@@ -3,21 +3,22 @@ import React, { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import BoxItem from "@/app/component/gacha/BoxItem";
 import GachaButton from "@/app/component/gacha/GachaButton";
-import { Users, GachaItem } from "@/app/interface";
+import { Users, GachaItem, User_resources } from "@/app/interface";
 import Modal from '@/app/component/modal';
 import ErrorAlert from "@/app/component/ErrorAlert";
 import sjcl from 'sjcl';
 import { useRefresh } from "@/app/component/RefreshContext"; // Import context
 import Loading from "@/app/component/Loading";
+import { UUID } from "crypto";
 
 // Define the ResourceInfo type (important!)
 interface ResourceInfo {
-    dust: string;
     tokens: string;
 }
 
 const Limited_A = () => {
     const [userData, setUserData] = useState<Users | null>(null);
+    const [userResourceData, setUserResourceData] = useState<User_resources | null>(null);
     const [gachaItem, setGachaItem] = useState<GachaItem[] | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isInsufficientModalOpen, setIsInsufficientModalOpen] = useState(false); // State for insufficient gems modal
@@ -32,6 +33,7 @@ const Limited_A = () => {
 
     const [isLoading, setIsLoading] = useState(false);
     const { refresh } = useRefresh();
+    const uid: any = sessionStorage.getItem('uid'); // Pastikan uid tersedia
 
     let baseSSRProbability: number = 0.006;
     let baseSRProbability: number = 0.051;
@@ -54,7 +56,6 @@ const Limited_A = () => {
 
     const fetchGachaApi = async (typeFetch: string, dataFetch?: any) => {
         try {
-            const uid = sessionStorage.getItem('uid'); // Pastikan uid tersedia
 
             // Gabungkan data yang akan dikirimkan dalam body
             const requestBody = {
@@ -192,10 +193,30 @@ const Limited_A = () => {
         }
     };
 
+    const getDataResources = async (uid: UUID) => {
+        try {
+            const response = await fetch('/api/user_resources', { // Your API endpoint
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid }),
+            });
+
+            if (!response.ok) throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
+            const data = await response.json();
+
+            console.log(data.data)
+            setUserResourceData(data.data);
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            setUserResourceData(null);
+        }
+    };
+
     useEffect(() => {
         if (gachaItem) {
             listGacha(gachaItem);
         }
+        if (uid) getDataResources(uid.toString());
     }, [gachaItem]);
 
     function multiplicativeCRNG(seed: number) {
@@ -226,9 +247,11 @@ const Limited_A = () => {
                     if (isDuplicate) {
                         // If duplicate, update fashion tokens based on rarity
                         if (pulledCharacterOrItem.rarity === "SSR") {
-                            await fetchGachaApi('updateFashionTokens', { fashion_tokens: '25' });
+                            await fetchGachaApi('updateFashionTokens', { fashion_tokens: '11' });
                         } else if (pulledCharacterOrItem.rarity === "SR") {
-                            await fetchGachaApi('updateFashionTokens', { fashion_tokens: '5' });
+                            await fetchGachaApi('updateFashionTokens', { fashion_tokens: '2' });
+                        } else {
+                            await fetchGachaApi('updateFashionTokens', { fashion_tokens: '1' });
                         }
                         // You might want to add a notification here to inform the user about the duplicate and token conversion
                     } else {
@@ -241,12 +264,7 @@ const Limited_A = () => {
                             gacha_type: 'Whisper_of_Silk'
                         };
                         await fetchGachaApi('upInven', dataFetch);
-
-                        if (pulledCharacterOrItem.rarity === "SSR") {
-                            await fetchGachaApi('updateFashionTokens', { fashion_tokens: '10' });
-                        } else if (pulledCharacterOrItem.rarity === "SR") {
-                            await fetchGachaApi('updateFashionTokens', { fashion_tokens: '2' });
-                        }
+                        await fetchGachaApi('updateFashionTokens', { fashion_tokens: '1' });
                     }
 
                     // Update history regardless of duplicate status
@@ -257,10 +275,10 @@ const Limited_A = () => {
                         gacha_type: 'Whispers_of_Silk'
                     });
 
-                    // Update glamour dust for R rarity
-                    if (rarity === "R") {
-                        await fetchGachaApi('updateGlamourDust', { glamour_dust: '15' });
-                    }
+                    // // Update glamour dust for R rarity
+                    // if (rarity === "R") {
+                    //     await fetchGachaApi('updateGlamourDust', { glamour_dust: '15' });
+                    // }
                 }
 
                 if (rarity === "SSR") {
@@ -295,7 +313,7 @@ const Limited_A = () => {
             let rand = random(); // Gunakan generator MCRNG 
             // console.log(rand, ':', ProbabilitySSRNow)
 
-            if (rand < ProbabilitySSRNow || (pity + 1) >= 90) {
+            if (rand < ProbabilitySSRNow || (pity + 1) >= 80) {
                 return "SSR";
             } else if (rand < ProbabilitySRNow || (pity + 1) % 10 === 0) {
                 return "SR";
@@ -311,19 +329,19 @@ const Limited_A = () => {
             let data;
 
             if (rarity === "SSR" || rarity === "SR") {
-                const isRateUp = await fetchGachaApi('getRateOn');
+                // const isRateUp = await fetchGachaApi('getRateOn');
 
-                if (isRateUp && rarity === "SSR") {
-                    // Rate ON: Ambil item limited
+                // if (isRateUp && rarity === "SSR") {
+                //     // Rate ON: Ambil item limited
+                //     data = await fetchGachaApi('getRateUpItem', dataFetch);
+                // } else {
+                // Rate OFF: 50:50 limited atau tidak (untuk SSR dan SR)
+                if (Math.random() < 0.5) {
                     data = await fetchGachaApi('getRateUpItem', dataFetch);
                 } else {
-                    // Rate OFF: 50:50 limited atau tidak (untuk SSR dan SR)
-                    if (Math.random() < 0.5) {
-                        data = await fetchGachaApi('getRateUpItem', dataFetch);
-                    } else {
-                        data = await fetchGachaApi('getRateOffItem', dataFetch);
-                    }
+                    data = await fetchGachaApi('getRateOffItem', dataFetch);
                 }
+                // }
 
                 // Pilih item dari data yang sudah difilter
                 const keys = Object.keys(data);
@@ -332,14 +350,14 @@ const Limited_A = () => {
                 console.log('rand item : ', randomItem);
                 pulledCharacterOrItem = randomItem;
 
-                // Update is_rate (khusus SSR)
-                if (rarity === "SSR") {
-                    if (randomItem.islimited) {
-                        await fetchGachaApi('setRateOff');
-                    } else {
-                        await fetchGachaApi('setRateOn');
-                    }
-                }
+                // // Update is_rate (khusus SSR)
+                // if (rarity === "SSR") {
+                //     if (randomItem.islimited) {
+                //         await fetchGachaApi('setRateOff');
+                //     } else {
+                //         await fetchGachaApi('setRateOn');
+                //     }
+                // }
             } else { // Untuk rarity R
                 data = await fetchGachaApi('getGachaItem', dataFetch);
 
@@ -415,8 +433,8 @@ const Limited_A = () => {
     };
 
     const listGacha = async (tenpull: any[]) => {
-        const sortedTenpull = sortPulledItems(tenpull);
-        setPulledItems(sortedTenpull);
+        // const sortedTenpull = sortPulledItems(tenpull);
+        setPulledItems(tenpull);
 
         // Assuming fetchGachaApi("getUserData", null) has been called before listGacha
         const currentInventory = userData?.inventory || [];
@@ -427,12 +445,15 @@ const Limited_A = () => {
             const isDuplicate = currentInventory.some(inventoryItem => inventoryItem.item_name === item.item_name);
 
             return {
-                dust: rarity === "R" ? '+15' : '',
-                tokens: rarity === "SR"
-                    ? (isDuplicate ? '+5' : '+2')
-                    : (rarity === "SSR" ? (isDuplicate ? '+25' : '+10') : ''),
+                tokens:
+                    rarity === "SR"
+                        ? (isDuplicate ? '+2' : '+1')
+                        : (rarity === "SSR"
+                            ? (isDuplicate ? '+11' : '+1')
+                            : (rarity === "R" ? '+1' : '')),
             };
-        }).filter(resource => resource.dust !== '' || resource.tokens !== '');
+
+        }).filter(resource => resource.tokens !== '');
 
         // Update state with the resourceInfo array
         setResourceInfo(resourceInfo);
@@ -448,55 +469,59 @@ const Limited_A = () => {
             {!isLoading && ( // Render konten hanya jika isLoading false
                 <>
                     <div className="flex flex-1 lg:pt-10 pt-4 bg-gacha1 bg-cover lg:blur-md blur-sm animate-pulse" />
-                    <div className="absolute w-full h-full flex flex-1 pt-10 bg-gradient-to-b from-transparent via-transparent to-black to-100% z-10" />
+                    <div className="absolute w-full h-full flex flex-1 bg-gradient-to-b from-transparent via-transparent to-black to-100% z-10" />
                     <div className="absolute w-full h-full flex flex-1 z-20 lg:pt-20 pt-14">
-                        <div className="flex flex-none flex-shrink w-2/5">
-                            <div className="relative h-full w-full transition-transform duration-200">
-                                <div className="absolute flex justify-end w-full h-full -bottom-32 -right-10">
+                        <div className="flex flex-1">
+                            <div className="relative flex flex-none w-1/3 justify-start p-8">
+                                <div className="absolute w-full h-full">
                                     <Image
-                                        id="mikoImg"
+                                        id="imgbanner"
                                         src={"/banner/avatar/limitedA.png"}
-                                        alt={"miko"}
-                                        layout="fill"
-                                        objectFit="contain"
-                                        objectPosition="bottom"
-                                        className="scale-150"
-                                    />
-                                </div>
-                                <div className="absolute flex justify-end w-full h-full -bottom-32 -right-52">
-                                    <Image
-                                        id="mikoImg"
-                                        src={"/banner/avatar/limitedB.png"}
-                                        alt={"miko"}
-                                        layout="fill"
-                                        objectFit="contain"
-                                        objectPosition="bottom"
-                                        className="scale-95"
+                                        alt={"imgbanner"}
+                                        fill
+                                        objectFit="cover"
+                                        objectPosition="top"
                                     />
                                 </div>
                             </div>
-                        </div>
-                        <div className="relative flex flex-1">
-                            <div className="absolute z-40 flex flex-1 w-full h-full flex-col lg:gap-4 gap-2">
-                                <div className="absolute flex items-center justify-end px-12 transform -skew-x-12 bg-gradient-to-r from-transparent via-red-600 to-red-600 to-100% bg-opacity-50 -right-10 transition-opacity duration-1000">
-                                    <p className="lg:text-8xl text-5xl text-end font-black transform skew-x-12 text-white pr-12">JAPANESE MIKO</p>
+
+                            <div className="relative flex flex-auto flex-col lg:gap-4 gap-2">
+                                <div className="absolute -right-12 flex items-start justify-start px-12 transform -skew-x-12 bg-gradient-to-r from-transparent via-red-600 to-red-600 to-100% bg-opacity-50 transition-opacity duration-1000">
+                                    <p className="lg:text-8xl text-end text-5xl font-black transform skew-x-12 text-white pr-12">JAPANESE MIKO</p>
                                 </div>
 
                                 {/* transparent div */}
                                 <div className="flex items-end justify-end px-12 transform -skew-x-12 bg-transparent">
-                                    <p className="lg:text-8xl text-5xl text-end font-black transform skew-x-12 text-transparent pr-12">JAPANESE MIKO</p>
+                                    <p className="lg:text-8xl text-5xl font-black transform skew-x-12 text-transparent pr-12">JAPANESE MIKO</p>
                                 </div>
                                 {/* transparent div */}
 
                                 <div className="flex flex-none items-start justify-end pr-16">
                                     <p className="text-end lg:text-sm text-[9px] lg:w-5/6 w-full">Rasakan keagungan kuil dengan gacha Miko terbaru! Dapatkan kostum gadis kuil yang cantik dengan jubah putih bersih dan rok merah menyala, lengkap dengan aksesoris seperti gohei dan ofuda. Raih kesempatan untuk memanggil roh keberuntungan dan keindahan! Jangan lewatkan kesempatan langka ini, tersedia untuk waktu terbatas!</p>
                                 </div>
-                                <div className="flex flex-1 flex-col gap-12">
+                                <div className="absolute flex flex-auto flex-col gap-8 bottom-0 right-0">
                                     <div className="flex flex-1 items-end justify-end gap-8 pr-16">
-                                        <BoxItem imageUrl={"/icons/outfit/A/mikoA.png"} altText={"miko a"} />
-                                        <BoxItem imageUrl={"/icons/outfit/B/mikoB.png"} altText={"miko b"} />
-                                        <BoxItem imageUrl={"/icons/outfit/C/mikoC.png"} altText={"miko c"} />
+                                        <BoxItem imageUrl={"/icons/outfit/A/MikoA.png"} altText={"Miko a"} />
+                                        <BoxItem imageUrl={"/icons/outfit/B/MikoB.png"} altText={"Miko b"} />
+                                        <BoxItem imageUrl={"/icons/outfit/C/MikoC.png"} altText={"Miko c"} />
                                         <p className=" flex flex-none h-20 justify-center items-center animate-pulse text-yellow-400">Rate Up!</p>
+                                    </div>
+                                    <div className="flex flex-1 pr-20 ">
+                                        <div className="relative flex flex-1 h-5 bg-gray-200">
+                                            <div className="absolute -top-4 -left-0 bg-red-500 px-1 transform -skew-x-12">
+                                                <p className="text-white font-bold ">Guarantee bar :</p>
+                                            </div>
+                                            <div className="absolute -right-3 -top-1 bg-red-500 font-bold px-1 transform -skew-x-12">
+                                                <p className="text-2xl text-white skew-x-12">/80</p>
+                                            </div>
+                                            {userResourceData && (
+                                                <div
+                                                    className="flex flex-none justify-end items-center bg-blue-500 px-2"
+                                                    style={{ width: `${(userResourceData.pity / 80) * 100}%` }}>
+                                                    <p className="text-xs font-semibold font-sans">{userResourceData.pity}</p>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="flex flex-none flex-col gap-4 pr-16 pb-10 justify-center">
                                         <GachaButton onClick={openModal} activeTab={activeTab} />
@@ -528,16 +553,10 @@ const Limited_A = () => {
 
                                     <div id="addResource" className="flex flex-none flex-row w-full justify-center items-center gap-1 animate-pulse text-[8px]">
                                         {resourceInfo.length > 0 && resourceInfo.map((resource, index) => (
-                                            <p key={index} className="flex flex-none flex-row gap-2 justify-center items-center text-black w-24 font-bold">
-                                                {resource.dust !== '' && (
-                                                    <>
-                                                        <Image src={"/icons/currency/glamour_dust.png"} alt={"glamour_dust"} width={12} height={12} />
-                                                        {resource.dust}
-                                                    </>
-                                                )}
+                                            <p key={index} className="flex flex-none flex-row gap-1 justify-center items-center text-black w-24 font-bold">
                                                 {resource.tokens !== '' && (
                                                     <>
-                                                        <Image src={"/icons/currency/fashion_tokens.png"} alt={"fashion_tokens"} width={12} height={12} />
+                                                        <Image src={"/icons/currency/fashion_tokens.png"} alt={"fashion_tokens"} width={24} height={24} />
                                                         {resource.tokens}
                                                     </>
                                                 )}

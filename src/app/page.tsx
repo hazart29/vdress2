@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import LoginForm from './component/login-form';
 import PWAInstallPrompt from './component/PWAInstallPompt';
 import { useRouter } from 'next/navigation';
 
@@ -25,11 +24,13 @@ function Home() {
 
     if ((window.matchMedia('(display-mode: fullscreen)').matches) || (window.matchMedia('(display-mode: standalone)').matches)) {
       setIsInstalled(true);
+    } else {
+      setIsInstalled(false);
     }
 
     // Redirect to /login after loading and checking installation
     const redirectToLogin = () => {
-      if (!isLoading) {
+      if (!isLoading && isInstalled === true) {
         router.push('/login');
       }
     };
@@ -48,9 +49,9 @@ function Home() {
 
   // The PWAInstallPrompt component will not be rendered since the user is 
   // immediately redirected to /login
-  // if (!isInstalled) { 
-  //   return <PWAInstallPrompt />; 
-  // }
+  if (!isInstalled) { 
+    return <PWAInstallPrompt />; 
+  }
 
 }
 

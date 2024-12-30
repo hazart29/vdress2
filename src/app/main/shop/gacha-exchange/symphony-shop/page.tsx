@@ -45,25 +45,59 @@ export default function GlamourDustExchange() {
     if (!selectedItem) return;
 
     try {
-      const response = await fetchApi('buyDustItem', { itemId: selectedItem.id, quantity });
-      const decryptedData = JSON.parse(sjcl.decrypt(process.env.SJCL_PASSWORD || 'virtualdressing', response.encryptedData));
-      console.log('Purchase successful:', decryptedData);
+      // Attempt to purchase the dust item
+      await fetchApi('buyDustItem', { itemId: selectedItem.id, quantity });
+
+      // Fetch updated dust items after purchase
+      const response = await fetchApi('getDustItems');
+
+      // Decrypt the fetched data
+      const decryptedData = JSON.parse(
+        sjcl.decrypt(
+          process.env.SJCL_PASSWORD ?? 'virtualdressing',
+          response.encryptedData
+        )
+      );
+
+      // Close the modal and show success message
       setShowModal(false);
       setExchangeSuccess(true);
-      refresh();
-      setDustItems(prevDustItems => {
-        if (!prevDustItems) return null; // Handle jika prevDustItems null
 
-        return prevDustItems.map(dustItem => {
-          if (dustItem.id === decryptedData.id) {
-            return { ...dustItem, limit: decryptedData.limit };
-          }
-          return dustItem;
+      // Refresh the UI data
+      refresh();
+
+      // Update the dust items in state
+      setDustItems((prevDustItems) => {
+        if (!prevDustItems) return [];
+
+        if (!Array.isArray(decryptedData.dustItems)) {
+          console.error("Invalid dustItems format:", decryptedData.dustItems);
+          return prevDustItems;
+        }
+
+        // Update only matching items
+        return prevDustItems.map((dustItems) => {
+          const updatedItem = decryptedData.dustItems.find(
+            (newItem: { id: number; }) => newItem.id === dustItems.id
+          );
+          return updatedItem ? { ...dustItems, ...updatedItem } : dustItems;
         });
       });
+      // Add the purchased item to inventoryItemNames
+      setInventoryItemNames((prevNames) => {
+        if (prevNames.includes(selectedItem.name)) {
+          return prevNames; // Avoid duplicates
+        }
+        return [...prevNames, selectedItem.name];
+      });
     } catch (error: any) {
+      // Log and handle error
       console.error('Error during purchase:', error);
-      setError(error.message || "An error occurred during purchase.");
+
+      // Set a user-friendly error message
+      setError(
+        error?.message || 'An unexpected error occurred during the purchase process.'
+      );
     }
   };
 
@@ -218,9 +252,16 @@ export default function GlamourDustExchange() {
           return (
             <button
               key={item.id}
-              className={`flex flex-col flex-none h-40 w-36 rounded-lg overflow-hidden bg-gray-100 shadow-md ${isItemInInventory || item.limit === 0 || userData?.glamour_dust === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => !isItemInInventory && item.limit !== 0 && userData?.glamour_dust === 0 && handleSelectItem(item)} // Kondisi onClick diperbarui
-              disabled={isItemInInventory || item.limit === 0 || userData?.glamour_dust === 0} // Atribut disabled diperbarui
+              className={`flex flex-col flex-none h-40 w-36 rounded-lg overflow-hidden bg-gray-100 shadow-md ${isItemInInventory || item.limit === 0 || (userData?.glamour_dust ?? 0) < item.price
+                ? 'opacity-50 cursor-not-allowed'
+                : ''
+                }`}
+              onClick={() => {
+                if (!isItemInInventory && item.limit > 0 && (userData?.glamour_dust ?? 0) >= item.price) {
+                  handleSelectItem(item);
+                }
+              }}
+              disabled={isItemInInventory || item.limit === 0 || (userData?.glamour_dust ?? 0) < item.price}
             >
               <div className="flex flex-1 flex-col w-full justify-between items-center bg-white p-4">
                 <Image

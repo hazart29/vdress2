@@ -6,16 +6,19 @@ import { jwtDecode } from 'jwt-decode';
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Backsound from "../component/backsound";
+import PWAInstallPrompt from "../component/PWAInstallPompt";
 
 export default function Layout({
     children,
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+    
     const router = useRouter();
     const [loading, isloading] = useState(true);
     const icon = '/ui/iconVD.svg';
     const currentUrl = usePathname();
+    const [isInstalled, setIsInstalled] = useState<boolean>(false);
 
     // Check if user is authenticated
 
@@ -54,9 +57,34 @@ export default function Layout({
         };
 
         checkAuth();
-    }, [router, isloading]);
+    }, [router, loading]);
+
+    useEffect(() => {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js', {
+                scope: '.'
+            }).then(function (registration) {
+                console.log('Laravel PWA: ServiceWorker registration successful with scope: ', registration.scope);
+            }, function (err) {
+                console.log('Laravel PWA: ServiceWorker registration failed: ', err);
+            });
+        }
+
+        if ((window.matchMedia('(display-mode: fullscreen)').matches) || (window.matchMedia('(display-mode: standalone)').matches)) {
+            setIsInstalled(true);
+        } else {
+            setIsInstalled(false);
+        }
+
+    }, [router]); // Add isLoading to the dependency array
+
+    // The PWAInstallPrompt component will not be rendered since the user is 
+    // immediately redirected to /login
+    
     if (loading) {
         return <div className='absolute flex w-full h-full z-[999] top-0 left-0 justify-center items-center'><Image src={icon} alt="none" width={40} height={40} className='animate-ping' /></div>;
+    } else if (!isInstalled) {
+        return <PWAInstallPrompt />;
     }
 
     return (

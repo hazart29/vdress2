@@ -13,8 +13,12 @@ const MoreBox: React.FC<{ activeTab: string }> = ({ activeTab }) => {
     };
 
     const goToShop = () => {
-        router.push('/main/shop')
-    }
+        if (activeTab === "limited") {
+            router.push('/main/shop/gacha-exchange/whispering-shop');
+        } else {
+            router.push('/main/shop/gacha-exchange/symphony-shop/');
+        }
+    };    
 
     return (
         <div className="flex gap-4">

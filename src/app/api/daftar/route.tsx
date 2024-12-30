@@ -53,21 +53,14 @@ export async function POST(req: Request) {
 
                 const tokenItems = await sql`SELECT * FROM token_items`;
                 for (let i = 0; i < tokenItems.length; i++) {
-                    if (tokenItems[i].id === 1 || tokenItems[i].id === 2) {
-                        await sql`INSERT INTO user_token_limit (uid, item_id, "limit", initial_limit)
-                    VALUES (${uid}, ${tokenItems[i].id}, ${null}, ${null})`;
-                    } else {
-                        await sql`INSERT INTO user_token_limit (uid, item_id, "limit", initial_limit)
+                    await sql`INSERT INTO user_token_limit (uid, item_id, "limit", initial_limit)
                     VALUES (${uid}, ${tokenItems[i].id}, 1, 1)`;
-                    }
                 }
 
                 const dustItems = await sql`SELECT * FROM dust_items`;
                 for (let i = 0; i < dustItems.length; i++) {
-                    if (dustItems[i].id === 1 || 2) {
-                        await sql`INSERT INTO user_dust_limit (uid, item_id, "limit", initial_limit)
-                        VALUES (${uid}, ${dustItems[i].id}, 5, 5)`;
-                    }
+                    await sql`INSERT INTO user_dust_limit (uid, item_id, "limit", initial_limit)
+                    VALUES (${uid}, ${dustItems[i].id}, 1, 1)`;
                 }
 
                 console.log("Data inserted into other table:", suited, user_resources);

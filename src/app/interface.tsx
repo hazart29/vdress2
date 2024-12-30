@@ -13,6 +13,7 @@ export interface Users {
 }
 
 export interface User_resources {
+    standard_pity: number;
     id: number;
     uid: UUID;
     chic_coins: number;

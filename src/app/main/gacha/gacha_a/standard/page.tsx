@@ -3,32 +3,34 @@ import React, { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import BoxItem from "@/app/component/gacha/BoxItem";
 import GachaButton from "@/app/component/gacha/GachaButton";
-import { Users, GachaItem } from "@/app/interface";
+import { Users, GachaItem, User_resources } from "@/app/interface";
 import Modal from '@/app/component/modal';
 import ErrorAlert from "@/app/component/ErrorAlert";
 import sjcl from 'sjcl';
 import { useRefresh } from "@/app/component/RefreshContext";
 import Loading from "@/app/component/Loading";
+import { UUID } from "crypto";
 
 // Define the ResourceInfo type (important!)
 interface ResourceInfo {
     dust: string;
-    tokens: string;
 }
 
 const Standard_A = () => {
     const [userData, setUserData] = useState<Users | null>(null);
+    const [userResourceData, setUserResourceData] = useState<User_resources | null>(null);
     const [gachaItem, setGachaItem] = useState<GachaItem[] | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isInsufficientModalOpen, setIsInsufficientModalOpen] = useState(false); // State for insufficient gems modal
     const videoRef = useRef<HTMLVideoElement>(null);
-    const [pulledItems, setPulledItems] = useState<GachaItem[]>([]);    
+    const [pulledItems, setPulledItems] = useState<GachaItem[]>([]);
     const [resourceInfo, setResourceInfo] = useState<ResourceInfo[]>([]);
 
     const [showExchangeModal, setShowExchangeModal] = useState(false);
     const [exchangeAmount, setExchangeAmount] = useState(0);
 
     const { refresh } = useRefresh();
+    const uid: any = sessionStorage.getItem('uid'); // Pastikan uid tersedia
     const [isLoading, setIsLoading] = useState(false);
 
     let baseSSRProbability: number = 0.006;
@@ -44,7 +46,6 @@ const Standard_A = () => {
 
     const fetchGachaApi = async (typeFetch: string, dataFetch?: any) => {
         try {
-            const uid = sessionStorage.getItem('uid'); // Pastikan uid tersedia
 
             // Gabungkan data yang akan dikirimkan dalam body
             const requestBody = {
@@ -181,10 +182,30 @@ const Standard_A = () => {
         }
     };
 
+    const getDataResources = async (uid: UUID) => {
+        try {
+            const response = await fetch('/api/user_resources', { // Your API endpoint
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid }),
+            });
+
+            if (!response.ok) throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
+            const data = await response.json();
+
+            console.log(data.data)
+            setUserResourceData(data.data);
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            setUserResourceData(null);
+        }
+    };
+
     useEffect(() => {
         if (gachaItem) {
             listGacha(gachaItem);
         }
+        if (uid) getDataResources(uid.toString());
     }, [gachaItem]);
 
     function multiplicativeCRNG(seed: number) {
@@ -215,9 +236,11 @@ const Standard_A = () => {
                     if (isDuplicate) {
                         // If duplicate, update fashion tokens based on rarity
                         if (pulledCharacterOrItem.rarity === "SSR") {
-                            await fetchGachaApi('updateFashionTokens', { fashion_tokens: '25' });
+                            await fetchGachaApi('updateGlamourDust', { glamour_dust: '11' });
                         } else if (pulledCharacterOrItem.rarity === "SR") {
-                            await fetchGachaApi('updateFashionTokens', { fashion_tokens: '5' });
+                            await fetchGachaApi('updateGlamourDust', { glamour_dust: '2' });
+                        } else {
+                            await fetchGachaApi('updateGlamourDust', { glamour_dust: '1' });
                         }
                         // You might want to add a notification here to inform the user about the duplicate and token conversion
                     } else {
@@ -230,11 +253,7 @@ const Standard_A = () => {
                             gacha_type: 'Symphony_of_Silk'
                         });
 
-                        if (pulledCharacterOrItem.rarity === "SSR") {
-                            await fetchGachaApi('updateFashionTokens', { fashion_tokens: '10' });
-                        } else if (pulledCharacterOrItem.rarity === "SR") {
-                            await fetchGachaApi('updateFashionTokens', { fashion_tokens: '2' });
-                        }
+                        await fetchGachaApi('updateGlamourDust', { glamour_dust: '1' });
                     }
 
                     // Update history regardless of duplicate status
@@ -245,10 +264,6 @@ const Standard_A = () => {
                         gacha_type: 'Symphony_of_Silk'
                     });
 
-                    // Update glamour dust for R rarity
-                    if (rarity === "R") {
-                        await fetchGachaApi('updateGlamourDust', { glamour_dust: '15' });
-                    }
                 }
 
                 if (rarity === "SSR") {
@@ -281,7 +296,7 @@ const Standard_A = () => {
             let rand = random(); // Gunakan generator MCRNG 
             // console.log(rand, ':', ProbabilitySSRNow)
 
-            if (rand < ProbabilitySSRNow || (standard_pity + 1) >= 90) {
+            if (rand < ProbabilitySSRNow || (standard_pity + 1) >= 80) {
                 return "SSR";
             } else if (rand < ProbabilitySRNow || (standard_pity + 1) % 10 === 0) {
                 return "SR";
@@ -383,8 +398,8 @@ const Standard_A = () => {
     };
 
     const listGacha = async (tenpull: any[]) => {
-        const sortedTenpull = sortPulledItems(tenpull);
-        setPulledItems(sortedTenpull);
+        // const sortedTenpull = sortPulledItems(tenpull);
+        setPulledItems(tenpull);
 
         // Assuming fetchGachaApi("getUserData", null) has been called before listGacha
         const currentInventory = userData?.inventory || [];
@@ -395,12 +410,15 @@ const Standard_A = () => {
             const isDuplicate = currentInventory.some(inventoryItem => inventoryItem.item_name === item.item_name);
 
             return {
-                dust: rarity === "R" ? '+15' : '',
-                tokens: rarity === "SR"
-                    ? (isDuplicate ? '+5' : '+2')
-                    : (rarity === "SSR" ? (isDuplicate ? '+25' : '+10') : ''),
+                dust:
+                    rarity === "SR"
+                        ? (isDuplicate ? '+2' : '+1')
+                        : (rarity === "SSR"
+                            ? (isDuplicate ? '+11' : '+1')
+                            : (rarity === "R" ? '+1' : '')),
             };
-        }).filter(resource => resource.dust !== '' || resource.tokens !== '');
+
+        }).filter(resource => resource.dust !== '');
 
         // Update state with the resourceInfo array
         setResourceInfo(resourceInfo);
@@ -415,56 +433,60 @@ const Standard_A = () => {
             )}
             {!isLoading && (
                 <>
-                    <div className="flex flex-1 lg:pt-10 pt-4 bg-gacha2 bg-cover lg:blur-md blur-sm animate-pulse" />
-                    <div className="absolute w-full h-full flex flex-1 pt-10 bg-gradient-to-b from-transparent via-transparent to-black to-100% z-10" />
+                    <div className="flex flex-1 lg:pt-10 pt-4 bg-gacha1 bg-cover lg:blur-md blur-sm animate-pulse" />
+                    <div className="absolute w-full h-full flex flex-1 bg-gradient-to-b from-transparent via-transparent to-black to-100% z-10" />
                     <div className="absolute w-full h-full flex flex-1 z-20 lg:pt-20 pt-14">
-                        <div className="flex flex-none flex-shrink w-2/5">
-                            <div className="relative h-full w-full transition-transform duration-200">
-                                <div className="absolute flex justify-end w-full h-full -bottom-28 -right-10">
+                        <div className="flex flex-1">
+                            <div className="relative flex flex-none w-1/3 justify-start p-8">
+                                <div className="absolute w-full h-full">
                                     <Image
-                                        id="mikoImg"
+                                        id="imgbanner"
                                         src={"/banner/avatar/standardA.png"}
-                                        alt={"miko"}
-                                        layout="fill"
-                                        objectFit="contain"
-                                        objectPosition="bottom"
-                                        className="scale-150"
-                                    />
-                                </div>
-                                <div className="absolute flex justify-end w-full h-full -bottom-32 -right-52">
-                                    <Image
-                                        id="mikoImg"
-                                        src={"/banner/avatar/standardB.png"}
-                                        alt={"miko"}
-                                        layout="fill"
-                                        objectFit="contain"
-                                        objectPosition="bottom"
-                                        className="scale-95"
+                                        alt={"imgbanner"}
+                                        fill
+                                        objectFit="cover"
+                                        objectPosition="top"
                                     />
                                 </div>
                             </div>
-                        </div>
-                        <div className="relative flex flex-1">
-                            <div className="absolute z-40 flex flex-1 w-full h-full flex-col lg:gap-4 gap-2">
-                                <div className="absolute flex items-center justify-end px-12 transform -skew-x-12 bg-gradient-to-r from-transparent via-violet-600 to-violet-600 to-100% bg-opacity-50 -right-10 transition-opacity duration-1000">
+
+                            <div className="relative flex flex-auto flex-col lg:gap-4 gap-2">
+                                <div className="absolute -right-12 flex items-start justify-start px-12 transform -skew-x-12 bg-gradient-to-r from-transparent via-violet-600 to-violet-600 to-100% bg-opacity-50 transition-opacity duration-1000">
                                     <p className="lg:text-8xl text-5xl text-end font-black transform skew-x-12 text-white pr-12">CELESTIAL MAIDENS</p>
                                 </div>
 
                                 {/* transparent div */}
                                 <div className="flex items-end justify-end px-12 transform -skew-x-12 bg-transparent">
-                                    <p className="lg:text-8xl text-5xl text-end font-black transform skew-x-12 text-transparent pr-12">Celestial Maidens</p>
+                                    <p className="lg:text-8xl text-5xl text-end font-black transform skew-x-12 text-transparent pr-12">CELESTIAL MAIDENS</p>
                                 </div>
                                 {/* transparent div */}
 
                                 <div className="flex flex-none items-start justify-end pr-16">
-                                    <p className="text-end lg:text-sm text-[9px] lg:w-5/6 w-full">Dalam sebuah kerajaan yang jauh, para maid adalah sosok yang sangat dihormati. Mereka dikenal karena kecantikan, keanggunan, dan dedikasi mereka yang tinggi. Dengan kostum yang mencerminkan status sosial mereka, para maid ini adalah simbol keindahan dan kemewahan. Dapatkan kostum maid ekslusif dan jadilah bagian dari kisah mereka.</p>
+                                    <p className="text-end lg:text-sm text-[9px] lg:w-5/6 w-full">Dalam sebuah kerajaan yang jauh, para Maid adalah sosok yang sangat dihormati. Mereka dikenal karena kecantikan, keanggunan, dan dedikasi mereka yang tinggi. Dengan kostum yang mencerminkan status sosial mereka, para Maid ini adalah simbol keindahan dan kemewahan. Dapatkan kostum Maid ekslusif dan jadilah bagian dari kisah mereka.</p>
                                 </div>
-                                <div className="flex flex-1 flex-col gap-12">
+                                <div className="absolute flex flex-auto flex-col gap-8 bottom-0 right-0">
                                     <div className="flex flex-1 items-end justify-end gap-8 pr-16">
-                                        <BoxItem imageUrl={"/icons/outfit/A/maidA.png"} altText={"maid a"} />
-                                        <BoxItem imageUrl={"/icons/outfit/B/maidB.png"} altText={"maid b"} />
-                                        <BoxItem imageUrl={"/icons/outfit/C/maidC.png"} altText={"maid c"} />
+                                        <BoxItem imageUrl={"/icons/outfit/A/MaidA.png"} altText={"Maid a"} />
+                                        <BoxItem imageUrl={"/icons/outfit/B/MaidB.png"} altText={"Maid b"} />
+                                        <BoxItem imageUrl={"/icons/outfit/C/MaidC.png"} altText={"Maid c"} />
                                         <p className=" flex flex-none h-20 justify-center items-center animate-pulse text-yellow-400">Rate Up!</p>
+                                    </div>
+                                    <div className="flex flex-1 pr-20 ">
+                                        <div className="relative flex flex-1 h-5 bg-gray-200">
+                                            <div className="absolute -top-4 -left-0 bg-red-500 px-1 transform -skew-x-12">
+                                                <p className="text-white font-bold ">Guarantee bar :</p>
+                                            </div>
+                                            <div className="absolute -right-3 -top-1 bg-red-500 font-bold px-1 transform -skew-x-12">
+                                                <p className="text-2xl text-white skew-x-12">/80</p>
+                                            </div>
+                                            {userResourceData && (
+                                                <div
+                                                    className="flex flex-none justify-end items-center bg-blue-500 px-2"
+                                                    style={{ width: `${(userResourceData.standard_pity / 80) * 100}%` }}>
+                                                    <p className="text-xs font-semibold font-sans">{userResourceData.standard_pity}</p>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="flex flex-none flex-col gap-4 pr-16 pb-10 justify-center">
                                         <GachaButton onClick={openModal} activeTab={activeTab} />
@@ -495,17 +517,11 @@ const Standard_A = () => {
 
                                     <div id="addResource" className="flex flex-none flex-row w-full justify-center items-center gap-1 animate-pulse text-[8px]">
                                         {resourceInfo.length > 0 && resourceInfo.map((resource, index) => (
-                                            <p key={index} className="flex flex-none flex-row gap-2 justify-center items-center text-black w-24 font-bold">
+                                            <p key={index} className="flex flex-none flex-row gap-1 justify-center items-center text-black w-24 font-bold">
                                                 {resource.dust !== '' && (
                                                     <>
-                                                        <Image src={"/icons/currency/glamour_dust.png"} alt={"glamour_dust"} width={12} height={12} />
+                                                        <Image src={"/icons/currency/glamour_dust.png"} alt={"glamour_dust"} width={24} height={24} />
                                                         {resource.dust}
-                                                    </>
-                                                )}
-                                                {resource.tokens !== '' && (
-                                                    <>
-                                                        <Image src={"/icons/currency/fashion_tokens.png"} alt={"fashion_tokens"} width={12} height={12} />
-                                                        {resource.tokens}
                                                     </>
                                                 )}
                                             </p>

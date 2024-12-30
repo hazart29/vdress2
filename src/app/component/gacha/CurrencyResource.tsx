@@ -47,46 +47,56 @@ const CurrencyResource: React.FC<CurrencyResourceProps> = ({ activeTab }) => {
     }, [uid, activeTab, refresh, router]);
 
     return (
-        <>
-            <div className='flex gap-2 flex-1 lg:text-xs text-[10px] p-1 items-center justify-end'>
-                <div className='px-2 py-1 items-center justify-center flex gap-2 rounded-full bg-white w-20'>
-                    <Image src={"/icons/currency/fashion_tokens.png"} alt={"fashion_tokens"} width={20} height={20} />
-                    <p className='text-slate-900'>
-                        {userData?.fashion_tokens || 0}
-                    </p>
-                </div>
-                <div className='px-2 py-1 items-center justify-center flex gap-2 rounded-full bg-white w-20'>
-                    <Image src={"/icons/currency/glamour_dust.png"} alt={"fashion_tokens"} width={20} height={20} />
-                    <p className='text-slate-900'>
-                        {userData?.glamour_dust || 0}
-                    </p>
-                </div>
-                {activeTab !== 'SHOP' && (
-                    <div id="essence" className='px-2 py-1 items-center justify-center flex gap-2 rounded-full bg-white w-20'>
-                        {activeTab === 'limited' ?
-                            <Image src={"/icons/currency/glimmering_essence.png"} alt={"fashion_tokens"} width={20} height={20} />
-                            :
-                            <Image src={"/icons/currency/shimmering_essence.png"} alt={"fashion_tokens"} width={20} height={20} />
-                        }
-
-                        <p className='text-slate-900'>
-                            {activeTab === 'limited' ? (userData?.glimmering_essence || 0) : (userData?.shimmering_essence || 0)}
+        <div className="flex gap-2 flex-1 lg:text-xs text-[10px] p-1 items-center justify-end">
+            {activeTab !== 'SHOP' ? (
+                <>
+                    {activeTab === 'limited' ? (
+                        <div className="px-2 py-1 items-center justify-center flex gap-2 rounded-full bg-white w-20">
+                            <Image src="/icons/currency/fashion_tokens.png" alt="Fashion Tokens" width={20} height={20} />
+                            <p className="text-slate-900">{userData?.fashion_tokens || 0}</p>
+                        </div>
+                    ) : (
+                        <div className="px-2 py-1 items-center justify-center flex gap-2 rounded-full bg-white w-20">
+                            <Image src="/icons/currency/glamour_dust.png" alt="Glamour Dust" width={20} height={20} />
+                            <p className="text-slate-900">{userData?.glamour_dust || 0}</p>
+                        </div>
+                    )}
+                    <div id="essence" className="px-2 py-1 items-center justify-center flex gap-2 rounded-full bg-white w-20">
+                        {activeTab === 'limited' ? (
+                            <Image src="/icons/currency/glimmering_essence.png" alt="Glimmering Essence" width={20} height={20} />
+                        ) : (
+                            <Image src="/icons/currency/shimmering_essence.png" alt="Shimmering Essence" width={20} height={20} />
+                        )}
+                        <p className="text-slate-900">
+                            {activeTab === 'limited' ? userData?.glimmering_essence || 0 : userData?.shimmering_essence || 0}
                         </p>
                     </div>
-                )}
-                <div className='px-2 py-1 items-center justify-between flex gap-2 rounded-full bg-white w-fit'>
-                    <Image src={"/icons/currency/glamour_gems.png"} alt={"fashion_tokens"} width={20} height={20} />
-                    <span className="flex gap-1">
-                        <p className='flex text-slate-900'>
-                            {userData?.glamour_gems || 0}
-                        </p>
-                        <a href={"/main/shop/top-up"} className="font-bold flex items-center justify-center text-black bg-gray-200 rounded-full px-1">
-                            +
-                        </a>
-                    </span>
-                </div>
+                </>
+            ) : (
+                <>
+                    <div className="px-2 py-1 items-center justify-center flex gap-2 rounded-full bg-white w-20">
+                        <Image src="/icons/currency/fashion_tokens.png" alt="Fashion Tokens" width={20} height={20} />
+                        <p className="text-slate-900">{userData?.fashion_tokens || 0}</p>
+                    </div>
+                    <div className="px-2 py-1 items-center justify-center flex gap-2 rounded-full bg-white w-20">
+                        <Image src="/icons/currency/glamour_dust.png" alt="Glamour Dust" width={20} height={20} />
+                        <p className="text-slate-900">{userData?.glamour_dust || 0}</p>
+                    </div>
+                </>
+            )}
+            <div className="px-4 py-1 items-center justify-between flex gap-2 rounded-full bg-white w-fit">
+                <Image src="/icons/currency/glamour_gems.png" alt="Glamour Gems" width={20} height={20} />
+                <span className="flex gap-1">
+                    <p className="flex text-slate-900">{userData?.glamour_gems || 0}</p>
+                    <a
+                        href="/main/shop/top-up"
+                        className="font-bold flex items-center justify-center text-black bg-gray-200 rounded-full px-1"
+                    >
+                        +
+                    </a>
+                </span>
             </div>
-        </>
+        </div>
     );
 }
 

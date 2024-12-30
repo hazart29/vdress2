@@ -8,7 +8,7 @@ const Page = () => {
   const router = useRouter();
 
   useEffect(() => {
-    router.push('/main/shop/gacha-exchange/token-exchange');
+    router.push('/main/shop/gacha-exchange/whispering-shop');
   }, [router]);
 
   return (

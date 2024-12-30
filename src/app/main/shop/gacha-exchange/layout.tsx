@@ -8,9 +8,9 @@ const ShopLayout = ({ children }: { children: React.ReactNode }) => {
   const [activeTab, setActiveTab] = useState(1);
 
   useEffect(() => {
-    if (pathname === '/main/shop/gacha-exchange/token-exchange') {
+    if (pathname === '/main/shop/gacha-exchange/whispering-shop') {
       setActiveTab(1);
-    } else if (pathname === '/main/shop/gacha-exchange/glamour-dust-exchange') {
+    } else if (pathname === '/main/shop/gacha-exchange/symphony-shop') {
       setActiveTab(2);
     } else if (pathname === '/main/shop/gacha-exchange/gems-exchange') {
       setActiveTab(3);
@@ -28,22 +28,22 @@ const ShopLayout = ({ children }: { children: React.ReactNode }) => {
         <nav className="relative z-10 w-2/3 my-10 px-8 py-4">
           <ul className="flex flex-1 gap-4 justify-center drop-shadow-md shadow-black">
             <li>
-              <Link href="/main/shop/gacha-exchange/token-exchange">
+              <Link href="/main/shop/gacha-exchange/whispering-shop">
                 <button
                   onClick={() => setActiveTab(1)}
                   className={tabClasses + (activeTab === 1 ? ` ${activeTabClasses}` : ` ${nonActiveTabClasses}`)}
                 >
-                  Token Exchange
+                  Whispering Shop
                 </button>
               </Link>
             </li>
             <li>
-              <Link href="/main/shop/gacha-exchange/glamour-dust-exchange">
+              <Link href="/main/shop/gacha-exchange/symphony-shop">
                 <button
                   onClick={() => setActiveTab(2)}
                   className={tabClasses + (activeTab === 2 ? ` ${activeTabClasses}` : ` ${nonActiveTabClasses}`)}
                 >
-                  Dust Exchange
+                  Symphony Shop
                 </button>
               </Link>
             </li>

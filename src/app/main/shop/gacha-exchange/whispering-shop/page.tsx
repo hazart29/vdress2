@@ -21,6 +21,7 @@ export default function TokenShop() {
   const { refresh } = useRefresh();
   const [inventoryItemNames, setInventoryItemNames] = useState<string[]>([]);
   const [userData, setUserData] = useState<User_resources | null>(null);
+  let isItemInInventory: boolean;
 
   const uid: any = sessionStorage.getItem('uid');
 
@@ -45,15 +46,38 @@ export default function TokenShop() {
     if (!selectedItem) return;
 
     try {
-      const response = await fetchApi('buyTokenItem', { itemId: selectedItem.id, quantity });
-      // if (response && response.success) {
-      console.log('Purchase successful:', response);
+      await fetchApi('buyTokenItem', { itemId: selectedItem.id, quantity });
+      const response = await fetchApi('getTokenItems');
+      const decryptedData = JSON.parse(sjcl.decrypt(process.env.SJCL_PASSWORD || 'virtualdressing', response.encryptedData));
+
       setShowModal(false);
-      setExchangeSuccess(true); // Set success state to true
+      setExchangeSuccess(true);
       refresh();
-      // } else {
-      //   setError(response?.error || "Purchase failed.");
-      // }
+      setTokenItems((prevTokenItems) => {
+        if (!prevTokenItems) return [];
+
+        if (!Array.isArray(decryptedData.tokenItems)) {
+          console.error("Invalid tokenItems format:", decryptedData.tokenItems);
+          return prevTokenItems;
+        }
+
+        // Update only matching items
+        return prevTokenItems.map((tokenItem) => {
+          const updatedItem = decryptedData.tokenItems.find(
+            (newItem: { id: number; }) => newItem.id === tokenItem.id
+          );
+          return updatedItem ? { ...tokenItem, ...updatedItem } : tokenItem;
+        });
+      });
+
+      // Add the purchased item to inventoryItemNames
+      setInventoryItemNames((prevNames) => {
+        if (prevNames.includes(selectedItem.name)) {
+          return prevNames; // Avoid duplicates
+        }
+        return [...prevNames, selectedItem.name];
+      });
+
     } catch (error: any) {
       console.error('Error during purchase:', error);
       setError(error.message || "An error occurred during purchase.");
@@ -88,12 +112,35 @@ export default function TokenShop() {
   };
 
   const fetchTokenItems = async () => {
-    const response = await fetchApi('getTokenItems');
-    if (response && response.tokenItems) {
-      setTokenItems(response.tokenItems);
-      console.log('setting token items');
-    } else if (response && response.error) {
-      setError(response.error);
+    try {
+      const response = await fetchApi('getTokenItems');
+
+      if (!response) {
+        setError("No response received from the server.");
+        return;
+      }
+
+      if (response.message && response.message !== 'Successful') { // Check for server-side error messages
+        setError(response.message);
+        return;
+      }
+
+      if (response.encryptedData) {
+        try {
+          const decryptedData = JSON.parse(sjcl.decrypt(process.env.SJCL_PASSWORD || 'virtualdressing', response.encryptedData));
+          setTokenItems(decryptedData.tokenItems);
+          console.log('Dust items set:', decryptedData.tokenItems); // Log data yang sudah didekripsi
+        } catch (decryptionError) {
+          console.error("Error decrypting dust items:", decryptionError);
+          setError("Error decrypting data. Please try again later.");
+        }
+      } else {
+        console.error("No encrypted data received.");
+        setError("Invalid data received from the server.");
+      }
+    } catch (error) {
+      console.error("Error fetching dust items:", error);
+      setError("An error occurred while fetching dust items.");
     }
   };
 
@@ -183,14 +230,14 @@ export default function TokenShop() {
       {tokenItems && tokenItems.length > 0 ? (
         tokenItems.map((item) => {
           // Cek apakah item dengan id 3, 4, atau 5 sudah ada di inventory
-          const isItemInInventory = inventoryItemNames.includes(item.name);
+          isItemInInventory = inventoryItemNames.includes(item.name);
 
           return (
             <button
               key={item.id}
-              className={`flex flex-col flex-none h-40 w-36 rounded-lg overflow-hidden bg-gray-100 shadow-md ${isItemInInventory || item.limit === 0 || userData?.fashion_tokens === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => !isItemInInventory && item.limit !== 0 && userData?.fashion_tokens !== 0 && handleSelectItem(item)} // Kondisi onClick diperbarui
-              disabled={isItemInInventory || item.limit === 0 || userData?.fashion_tokens === 0 } // Atribut disabled diperbarui
+              className={`flex flex-col flex-none h-40 w-36 rounded-lg overflow-hidden bg-gray-100 shadow-md ${isItemInInventory || item.limit === 0 || (userData?.fashion_tokens ?? 0) < item.price ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={() => !isItemInInventory && item.limit !== 0 && (userData?.fashion_tokens ?? 0) >= item.price && handleSelectItem(item)} // Kondisi onClick diperbarui
+              disabled={isItemInInventory || item.limit === 0 || (userData?.fashion_tokens ?? 0) < item.price} // Atribut disabled diperbarui
             >
               <div className="flex flex-1 flex-col w-full justify-between items-center bg-white p-4">
                 <Image
@@ -207,7 +254,6 @@ export default function TokenShop() {
               {/* Menampilkan status limit dan status sudah dimiliki */}
               <div className="flex flex-col flex-none w-full p-2 bg-amber-500 text-white">
                 <p className="text-xs flex gap-1 items-center justify-center">
-
                   {isItemInInventory ? (
                     <p className="text-xs text-gray-300 text-center">Sudah dimiliki</p>
                   ) : (
@@ -224,7 +270,6 @@ export default function TokenShop() {
                       <p className="text-xs text-white text-center">{item.price}</p>
                     </>
                   )}
-
                 </p>
               </div>
             </button>
