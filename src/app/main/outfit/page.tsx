@@ -127,12 +127,18 @@ const CanvasComponent: React.FC = () => {
           break;
         case "getOutfitByLayer":
           if (decryptedData && decryptedData.length > 0) {
-            setOutfitData(decryptedData);
+            // Filter duplicate items based on `item_name`
+            const uniqueItems = decryptedData.filter((item: Inventory, index: number, self: Inventory[]) =>
+              index === self.findIndex((t) => t.item_name === item.item_name)
+            );
+
+            setOutfitData(uniqueItems);
           } else {
             console.log('No outfit data found for getOutfitByLayer');
             setOutfitData([]);
           }
           break;
+
         default:
           console.log('Unknown action:', action);
       }
@@ -251,7 +257,7 @@ const CanvasComponent: React.FC = () => {
           <DownloadButton onClick={handleDownload} />
         </div>
         {isLoading ? (
-          <Loading/>
+          <Loading />
         ) : (
           <div className="relative flex flex-none w-1/4 flex-shrink transition-transform duration-1000 h-full transform">
             <canvas id="avatar" ref={avatarRef} className="absolute left-0 h-full z-0" width={2000} height={4000} />
