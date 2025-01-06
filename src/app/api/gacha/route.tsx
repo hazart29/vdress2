@@ -104,6 +104,14 @@ export async function POST(req: Request) {
                     return NextResponse.json({ message: 'Failed to update Essence', error: error }, { status: 500 });
                 }
 
+            case 'getAllGachaItems':
+                const gachaItem = await sql`SELECT * FROM gacha_item`;
+                if (gachaItem.length > 0) {
+                    return NextResponse.json({ gachaItem }, { status: 200 });
+                } else {
+                    return NextResponse.json({ message: 'user not found' }, { status: 404 });
+                }
+
             case 'incPity':
                 const incPity = parseInt(data.incPity || '0', 10);
                 const typePity = data.type;
@@ -143,6 +151,48 @@ export async function POST(req: Request) {
                         VALUES (${uid}, ${rarity}, ${item_name}, ${part_outfit}, ${layer});`;
 
                     return NextResponse.json({ message: `${item_name}, push successfully` }, { status: 200 });
+
+                } catch (error) {
+                    console.error('Error updating inventory:', error);
+                    return NextResponse.json({ message: 'Error updating inventory' }, { status: 500 });
+                }
+
+            case 'batchUpInven':
+                try {
+                    const { items } = data;
+
+                    // Validasi input
+                    if (!Array.isArray(items) || items.length === 0) {
+                        return NextResponse.json({ message: 'Items array is required and cannot be empty' }, { status: 400 });
+                    }
+
+                    // Validasi tiap item dalam array
+                    const invalidItems = items.filter(item =>
+                        !item.item_name || !item.rarity || !item.part_outfit || !item.layer
+                    );
+
+                    if (invalidItems.length > 0) {
+                        return NextResponse.json({
+                            message: 'Each item must have item_name, rarity, part_outfit, and layer'
+                        }, { status: 400 });
+                    }
+
+                    // Lakukan batch insert ke database
+                    const values = items.map(item => ({
+                        uid,
+                        rarity: item.rarity,
+                        item_name: item.item_name,
+                        part_outfit: item.part_outfit,
+                        layer: item.layer,
+                    }));
+
+                    await sql`
+                            INSERT INTO inventory (uid, rarity, item_name, part_outfit, layer)
+                            SELECT * FROM json_to_recordset(${JSON.stringify(values)})
+                            AS x(uid UUID, rarity TEXT, item_name TEXT, part_outfit TEXT, layer TEXT);
+                        `;
+
+                    return NextResponse.json({ message: 'Items pushed successfully' }, { status: 200 });
 
                 } catch (error) {
                     console.error('Error updating inventory:', error);
@@ -205,7 +255,7 @@ export async function POST(req: Request) {
 
             case 'getStandardItem':
                 const rarity = data.rarity;
-                if (!getGachaRarity) {
+                if (!rarity) {
                     return NextResponse.json({ message: 'rarity is required' }, { status: 400 });
                 }
                 const standardRows = await sql`SELECT * FROM gacha_item WHERE rarity = ${rarity} AND isLimited = 'false'`;
@@ -324,6 +374,48 @@ export async function POST(req: Request) {
                 } catch (error) {
                     console.error('Error updating Glamour Dust:', error);
                     return NextResponse.json({ message: 'Failed to update Glamour Dust', error: error }, { status: 500 });
+                }
+
+            case 'batchUpHistory':
+                try {
+                    const { items } = data;
+
+                    // Validasi input
+                    if (!Array.isArray(items) || items.length === 0) {
+                        return NextResponse.json({ message: 'Items array is required and cannot be empty' }, { status: 400 });
+                    }
+
+                    // Validasi tiap item dalam array
+                    const invalidItems = items.filter(item =>
+                        !item.item_name || !item.rarity || !item.part_outfit || !item.gacha_type
+                    );
+
+                    if (invalidItems.length > 0) {
+                        return NextResponse.json({
+                            message: 'Each item must have item_name, rarity, part_outfit, and gacha_type'
+                        }, { status: 400 });
+                    }
+
+                    // Lakukan batch insert ke database
+                    const values = items.map(item => ({
+                        uid,
+                        rarity: item.rarity,
+                        item_name: item.item_name,
+                        part_outfit: item.part_outfit,
+                        gacha_type: item.gacha_type,
+                    }));
+
+                    await sql`
+                            INSERT INTO gacha_history (uid, rarity, item_name, part_outfit, gacha_type)
+                            SELECT * FROM json_to_recordset(${JSON.stringify(values)})
+                            AS x(uid UUID, rarity TEXT, item_name TEXT, part_outfit TEXT, gacha_type TEXT);
+                        `;
+
+                    return NextResponse.json({ message: 'Items pushed successfully to history' }, { status: 200 });
+
+                } catch (error) {
+                    console.error('Error updating history:', error);
+                    return NextResponse.json({ message: 'Error updating history' }, { status: 500 });
                 }
 
             case 'updateFashionTokens':

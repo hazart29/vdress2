@@ -25,16 +25,19 @@ const Standard_A = () => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [pulledItems, setPulledItems] = useState<GachaItem[]>([]);
     const [resourceInfo, setResourceInfo] = useState<ResourceInfo[]>([]);
-
+    const [localGachaData, setLocalGachaData] = useState<GachaItem[]>([]);
     const [showExchangeModal, setShowExchangeModal] = useState(false);
     const [exchangeAmount, setExchangeAmount] = useState(0);
-
     const { refresh } = useRefresh();
     const uid: any = sessionStorage.getItem('uid'); // Pastikan uid tersedia
     const [isLoading, setIsLoading] = useState(false);
-
-    let baseSSRProbability: number = 0.006;
-    let baseSRProbability: number = 0.051;
+    let tenpull: GachaItem[] = [];
+    let baseSSRProbability = 0.0075; // 0.75%
+    let baseSRProbability = 0.01;    // 1%
+    const consolidatedSSRProbability = 0.02; // 2%
+    const consolidatedSRProbability = 0.12; // 12%
+    const softPity = 60;
+    const hardPity = 80;
     let ProbabilitySSRNow: number;
     let ProbabilitySRNow: number;
     let standard_pity: number;
@@ -42,7 +45,18 @@ const Standard_A = () => {
 
     useEffect(() => {
         fetchGachaApi("getUserData", null);
+        fetchAllGachaItems()
     }, []); // Empty dependency array ensures this runs once on component mount
+
+    async function fetchAllGachaItems() {
+        try {
+            const data = await fetchGachaApi('getAllGachaItems');
+            // console.log('data gacha: ', data.gachaItem)
+            setLocalGachaData(data.gachaItem); // Simpan ke state lokal
+        } catch (error) {
+            console.error('Error fetching all gacha items:', error);
+        }
+    }
 
     const fetchGachaApi = async (typeFetch: string, dataFetch?: any) => {
         try {
@@ -99,7 +113,7 @@ const Standard_A = () => {
 
     const closeModal = () => {
         setIsModalOpen(false);
-
+        tenpull = [];
         refresh()
     };
 
@@ -171,17 +185,6 @@ const Standard_A = () => {
         }
     }
 
-    const handleVideoEnd = async () => {
-        const videoDiv = document.getElementById('video');
-        if (videoRef.current) {
-            videoDiv?.classList.add('hidden');
-            videoRef.current.style.display = 'none';
-            // if (gachaItem) {
-            //     listGacha(gachaItem);
-            // }
-        }
-    };
-
     const getDataResources = async (uid: UUID) => {
         try {
             const response = await fetch('/api/user_resources', { // Your API endpoint
@@ -224,52 +227,45 @@ const Standard_A = () => {
     let random = multiplicativeCRNG(Date.now());
 
     class GachaSystem {
+        static PITY_HARD_SSR = 80;
+        static PITY_SOFT_SSR = 60; // Soft standard_pity for increased SSR chance
+        static PITY_SR = 10;
+        static PITY_THRESHOLD = 80;
+        static SSR_DUPLICATE_DUSTS = 10;  // Example value
+        static SR_DUPLICATE_DUSTS = 2;
+        static SSR_NEW_ITEM_DUSTS = 1;
+        static SR_NEW_ITEM_DUSTS = 1;
+        srPity: number = 0;  // Track SR standard_pity
+        static isRateUp: boolean;
+        static itemsToUpload: GachaItem[] = [];
+        static glamourDust: number = 0;
+
         async makeWish() {
             try {
-                let rarity = this.calculateRarity();
-                let pulledCharacterOrItem = await this.pullCharacterOrItem(rarity);
+                const rarity = this.calculateRarity();
+                const pulledCharacterOrItem = await this.pullCharacterOrItem(rarity);
 
                 if (pulledCharacterOrItem) {
-                    // Check for duplicates using existing getUserData API
                     const isDuplicate = await this.checkDuplicateItem(pulledCharacterOrItem);
 
                     if (isDuplicate) {
-                        // If duplicate, update fashion tokens based on rarity
-                        if (pulledCharacterOrItem.rarity === "SSR") {
-                            await fetchGachaApi('updateGlamourDust', { glamour_dust: '11' });
-                        } else if (pulledCharacterOrItem.rarity === "SR") {
-                            await fetchGachaApi('updateGlamourDust', { glamour_dust: '2' });
-                        } else {
-                            await fetchGachaApi('updateGlamourDust', { glamour_dust: '1' });
-                        }
-                        // You might want to add a notification here to inform the user about the duplicate and token conversion
+                        await this.handleDuplicate(pulledCharacterOrItem); // Handle duplicate item
                     } else {
-                        // If not duplicate, update inventory and add initial tokens
-                        await fetchGachaApi('upInven', {
-                            rarity: pulledCharacterOrItem.rarity,
-                            item_name: pulledCharacterOrItem.item_name,
-                            part_outfit: pulledCharacterOrItem.part_outfit,
-                            layer: pulledCharacterOrItem.layer,
-                            gacha_type: 'Symphony_of_Silk'
-                        });
-
-                        await fetchGachaApi('updateGlamourDust', { glamour_dust: '1' });
+                        await this.addItemToInventory(pulledCharacterOrItem); // Add new item to inventory
                     }
 
-                    // Update history regardless of duplicate status
-                    await fetchGachaApi('upHistoryA', {
-                        rarity: pulledCharacterOrItem.rarity,
-                        item_name: pulledCharacterOrItem.item_name,
-                        part_outfit: pulledCharacterOrItem.part_outfit,
-                        gacha_type: 'Symphony_of_Silk'
-                    });
-
+                    // await this.updateHistory(pulledCharacterOrItem); // Update history with the item
                 }
 
+                // Update standard_pity based on rarity
                 if (rarity === "SSR") {
-                    standard_pity = 0;
+                    this.resetPitySSR();
+                } else if (rarity === "SR") {
+                    this.resetPitySR();
+                    this.incrementPitySSR();
                 } else {
-                    standard_pity += 1;
+                    this.incrementPitySSR();
+                    this.incrementPitySR();
                 }
 
                 return pulledCharacterOrItem;
@@ -279,12 +275,80 @@ const Standard_A = () => {
             }
         }
 
+        /// Calculate SSR and SR probabilities based on standard_pity
+        calculatePityProbabilities() {
+            console.log('standard_pity now : ', standard_pity + 1);
+
+            // SSR probability (before soft standard_pity, soft standard_pity, and hard standard_pity)
+            if (standard_pity < softPity) {
+                // Before soft standard_pity: Linearly increase SSR probability up to 2%
+                const progress = standard_pity / softPity; // Progression between 0 and 1
+                ProbabilitySSRNow = baseSSRProbability +
+                    (consolidatedSSRProbability - baseSSRProbability) * progress;
+            } else if (standard_pity >= softPity && standard_pity < hardPity) {
+                // Soft standard_pity: Exponentially increase SSR probability
+                const progress = (standard_pity - softPity) / (hardPity - softPity); // Progression between 0 and 1
+                ProbabilitySSRNow = consolidatedSSRProbability +
+                    (1 - consolidatedSSRProbability) * (1 - Math.exp(-5 * progress));
+            } else if (standard_pity >= hardPity) {
+                // Hard standard_pity: Guaranteed SSR
+                ProbabilitySSRNow = 1;
+            } else {
+                // Base probability
+                ProbabilitySSRNow = baseSSRProbability;
+            }
+
+            // SR probability (before 10th pull and guarantee)
+            if (this.srPity < 9) {
+                // Before 10th pull: Linearly increase SR probability up to 12%
+                const progress = this.srPity / 9; // Progression between 0 and 1
+                ProbabilitySRNow = baseSRProbability +
+                    (consolidatedSRProbability - baseSRProbability) * progress;
+            } else {
+                // Guarantee SR at 10th pull
+                ProbabilitySRNow = 1;
+            }
+        }
+
+        calculateRarity() {
+            const rand = random(); // Use MCRNG generator
+            if (rand < ProbabilitySSRNow || (standard_pity + 1) >= GachaSystem.PITY_THRESHOLD) {
+                return "SSR";
+            } else if (rand < ProbabilitySRNow || (this.srPity + 1) % 10 === 0) {
+                return "SR";
+            } else {
+                return "R";
+            }
+        }
+
+        async pullCharacterOrItem(rarity: string) {
+            try {
+                let data;
+
+                if (rarity === "SSR") {
+                    data = localGachaData.filter(item => item.rarity === rarity && item.rate_up === false);
+                } else {
+                    data = localGachaData.filter(item => item.rarity === rarity);
+                }
+
+                const randomItem = this.selectRandomItem(data);
+                return randomItem;
+            } catch (error) {
+                console.error('Error pulling character or item:', error);
+                return null;
+            }
+        }
+
+        selectRandomItem(data: { [x: string]: any; }) {
+            const keys = Object.keys(data);
+            const randomKey = keys[Math.floor(Math.random() * keys.length)];
+            return data[randomKey];
+        }
+
         async checkDuplicateItem(item: GachaItem): Promise<boolean> {
             try {
-                await fetchGachaApi("getUserData", null); // Refresh user data
-                const currentInventory = userData?.inventory || []; // Get updated inventory from userData
-
-                // Check if item with the same name already exists
+                await fetchGachaApi("getUserData", null);
+                const currentInventory = userData?.inventory || [];
                 return currentInventory.some(inventoryItem => inventoryItem.item_name === item.item_name);
             } catch (error) {
                 console.error('Error checking duplicate item:', error);
@@ -292,110 +356,135 @@ const Standard_A = () => {
             }
         }
 
-        calculateRarity() {
-            let rand = random(); // Gunakan generator MCRNG 
-            // console.log(rand, ':', ProbabilitySSRNow)
+        // Add the functions you provided here
+        async handleDuplicate(item: { rarity: string; }) {
+            try {
+                const dusts = item.rarity === "SSR"
+                    ? GachaSystem.SSR_DUPLICATE_DUSTS
+                    : item.rarity === "SR"
+                        ? GachaSystem.SR_DUPLICATE_DUSTS
+                        : 1;
 
-            if (rand < ProbabilitySSRNow || (standard_pity + 1) >= 80) {
-                return "SSR";
-            } else if (rand < ProbabilitySRNow || (standard_pity + 1) % 10 === 0) {
-                return "SR";
-            } else {
-                return "R";
+                GachaSystem.glamourDust += dusts;
+            } catch (error) {
+                console.error('Error handling duplicate item:', error);
             }
         }
 
+        async addItemToInventory(pulledCharacterOrItem: GachaItem) {
+            try {
+                GachaSystem.itemsToUpload.push(pulledCharacterOrItem);
 
-        async pullCharacterOrItem(rarity: string) {
-            let pulledCharacterOrItem: any;
-            const dataFetch = { rarity };
-            let data;
+                const dusts = pulledCharacterOrItem.rarity === "SSR"
+                    ? GachaSystem.SSR_NEW_ITEM_DUSTS
+                    : pulledCharacterOrItem.rarity === "SR"
+                        ? GachaSystem.SR_NEW_ITEM_DUSTS
+                        : 1;
 
-            if (rarity === "SSR") {
-
-                // Rate ON: Ambil item limited
-                data = await fetchGachaApi('getStandardItem', dataFetch);
-
-                // Pilih item dari data yang sudah difilter
-                const keys = Object.keys(data);
-                const randomKey = keys[Math.floor(Math.random() * keys.length)];
-                const randomItem = data[randomKey];
-                console.log('rand item : ', randomItem);
-                pulledCharacterOrItem = randomItem;
-
-            } else { // Untuk rarity R
-                data = await fetchGachaApi('getGachaItem', dataFetch);
-
-                // Pilih item dari data 
-                const keys = Object.keys(data);
-                const randomKey = keys[Math.floor(Math.random() * keys.length)];
-                const randomItem = data[randomKey];
-                // console.log('rand item : ', randomItem);
-                pulledCharacterOrItem = randomItem;
+                GachaSystem.glamourDust += dusts;
+            } catch (error) {
+                console.error('Error adding item to inventory:', error);
             }
+        }
 
-            // console.log('pulled : ', pulledCharacterOrItem)
+        resetPitySSR() {
+            standard_pity = 0;
+        }
 
-            return pulledCharacterOrItem;
+        resetPitySR() {
+            this.srPity = 0;
+        }
+
+        incrementPitySSR() {
+            standard_pity += 1;
+        }
+
+        incrementPitySR() {
+            this.srPity += 1;
         }
     }
 
     async function pull(a: number): Promise<GachaItem[]> {
-        let tenpull: GachaItem[] = [];
+        tenpull = [];
 
         try {
             await fetchGachaApi('getStandardPity');
 
             for (let i = 0; i < a; i++) {
-                // Hitung probabilitas SR dan SSR berdasarkan pity saat ini
-                ProbabilitySRNow = baseSRProbability + ((standard_pity % 10) * 0.0087);
-                ProbabilitySSRNow = baseSSRProbability + (standard_pity * 0.00111);
-                // console.log('ProbabilitySRNow', ProbabilitySRNow)
-                // console.log('ProbabilitySSRNow', ProbabilitySSRNow)
+                // Hitung probabilitas berdasarkan standard_pity
+                gacha.calculatePityProbabilities();
 
+                // Simulasi gacha
                 const result = await gacha.makeWish();
-                // Gunakan if-else untuk incSRProbability
-                if (ProbabilitySRNow >= 1) {
-                    ProbabilitySSRNow = baseSRProbability;
-                }
-
-                // Gunakan if-else untuk incSSRProbability
-                if (ProbabilitySSRNow >= 1) {
-                    ProbabilitySSRNow = baseSSRProbability;
-                }
-
                 tenpull[i] = result;
             }
 
-            // console.log('pity after loop:', standard_pity);
+            // Upload semua hasil gacha sekaligus
+            if (GachaSystem.itemsToUpload.length > 0) await uploadInventory(GachaSystem.itemsToUpload);
+            if (GachaSystem.glamourDust !== 0) await updateGlamourDust(GachaSystem.glamourDust);
 
-            // Update pity di server
+            // Reset after the upload
+            GachaSystem.itemsToUpload = [];
+            GachaSystem.glamourDust = 0;
+
+            // Update standard_pity dan essence di server
             await fetchGachaApi('incPity', {
                 incPity: standard_pity,
-                type: 'standard'
+                type: 'standard',
             });
 
-            // Update glamour_gems di server (pastikan endpoint API Anda mengharapkan string)
-            const ShimmeringEssence = (a).toString();
+            const ShimmeringEssence = a.toString();
             await fetchGachaApi('updateEssence', {
                 essence: ShimmeringEssence,
-                type: 'standard'
+                type: 'standard',
             });
 
-            return tenpull;
+            await updateHistory(tenpull);
 
+            return tenpull;
         } catch (error) {
-            console.error('Error fetching API:', error);
+            console.error('Error pulling gacha:', error);
             return [];
         }
     }
 
-    const sortPulledItems = (pulledItems: GachaItem[]) => {
-        return pulledItems.sort((a, b) => {
-            const rarityOrder = { R: 0, SR: 1, SSR: 2 };
-            return rarityOrder[b.rarity as keyof typeof rarityOrder] - rarityOrder[a.rarity as keyof typeof rarityOrder];
-        });
-    };
+    async function updateGlamourDust(amount: number) {
+        try {
+            await fetchGachaApi('updateGlamourDust', { glamour_dust: amount });
+        } catch (error) {
+            console.error('Error updating glamour dust:', error);
+        }
+    }
+
+    async function updateHistory(items: GachaItem[]) {
+        try {
+            const dataFetch = items.map(item => ({
+                rarity: item.rarity,
+                item_name: item.item_name,
+                part_outfit: item.part_outfit,
+                gacha_type: 'Symphony_of_Silk'
+            }));
+            await fetchGachaApi('batchUpHistory', { items: dataFetch });
+        } catch (error) {
+            console.error('Error updating history:', error);
+        }
+    }
+
+    // Fungsi untuk mengunggah hasil gacha ke inventory sekaligus
+    async function uploadInventory(items: GachaItem[]) {
+        try {
+            const dataFetch = items.map(item => ({
+                rarity: item.rarity,
+                item_name: item.item_name,
+                part_outfit: item.part_outfit,
+                layer: item.layer,
+                gacha_type: 'Symphony_of_Silk',
+            }));
+            await fetchGachaApi('batchUpInven', { items: dataFetch });
+        } catch (error) {
+            console.error('Error uploading inventory:', error);
+        }
+    }
 
     const listGacha = async (tenpull: any[]) => {
         // const sortedTenpull = sortPulledItems(tenpull);

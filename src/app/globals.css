@@ -28,6 +28,19 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #f3f4f6; /* Warna track */
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #8490b1; /* Warna thumb */
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #c0d4f5; /* Warna saat hover */
+  }
 }
 
 #bg3 {

@@ -3,30 +3,27 @@ import { HistoryGachaA } from "@/app/interface";
 import ErrorAlert from "../ErrorAlert";
 import sjcl from "sjcl";
 
-const HistoryGacha = ({ gachaType }: { gachaType: string }) => { // Terima props gachaType
+const HistoryGacha = ({ gachaType }: { gachaType: string }) => {
   const [gachaList, setGachaList] = useState<HistoryGachaA[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
   useEffect(() => {
-    console.log(gachaType);
-    fetchHistoryApi("getHistory", { gacha_type: gachaType.toString() }); // Sertakan gachaType di dataFetch
-  }, [gachaType]); // Tambahkan gachaType sebagai dependency
-
+    setCurrentPage(1); // Reset pagination when gachaType changes
+    fetchHistoryApi("getHistory", { gacha_type: gachaType.toString() });
+  }, [gachaType]);
 
   const fetchHistoryApi = async (typeFetch: string, dataFetch?: any) => {
     try {
-      const uid = sessionStorage.getItem('uid'); // Pastikan uid tersedia
+      const uid = sessionStorage.getItem('uid');
 
-      // Gabungkan data yang akan dikirimkan dalam body
       const requestBody = {
         uid: uid!,
         typeFetch: typeFetch,
-        ...(dataFetch || {}) // Gabungkan dataFetch jika ada
+        ...(dataFetch || {})
       };
 
-      // Enkripsi data dengan SJCL
-      const password = 'virtualdressing'; // Ganti dengan password yang lebih kuat dan aman
+      const password = 'virtualdressing';
       if (!password) {
         throw new Error('SJCL_PASSWORD tidak ditemukan');
       }
@@ -37,7 +34,7 @@ const HistoryGacha = ({ gachaType }: { gachaType: string }) => { // Terima props
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ encryptedData }), // Kirim data sebagai JSON
+        body: JSON.stringify({ encryptedData }),
       });
 
       if (!response.ok) {
@@ -57,26 +54,22 @@ const HistoryGacha = ({ gachaType }: { gachaType: string }) => { // Terima props
       console.error('Error fetching data:', error);
       return <ErrorAlert message='Terjadi kesalahan. Muat ulang kembali.' />;
     }
-  }
+  };
 
-  // Urutkan gachaList berdasarkan gacha_time secara descending (terbaru duluan)
   const sortedGachaList = [...gachaList].sort(
     (a, b) => new Date(b.gacha_time).getTime() - new Date(a.gacha_time).getTime()
   );
 
-  // Logika untuk pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = sortedGachaList.slice(indexOfFirstItem, indexOfLastItem);
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
-  // Hitung total halaman
   const totalPages = Math.ceil(sortedGachaList.length / itemsPerPage);
 
-  // Logika untuk pagination boundaries dan siblings
-  const siblings = 1; // Jumlah sibling di setiap sisi halaman aktif
-  const boundaries = 1; // Jumlah boundary di awal dan akhir
+  const siblings = 1;
+  const boundaries = 1;
 
   const range = (start: number, end: number) => {
     let length = end - start + 1;
@@ -137,8 +130,8 @@ const HistoryGacha = ({ gachaType }: { gachaType: string }) => { // Terima props
             </tr>
           </thead>
           <tbody>
-            {currentItems.map((gacha) => (
-              <tr key={gacha.gacha_time} className="border-b border-amber-800 bg-amber-100 text-gray-500">
+            {currentItems.map((gacha, index) => (
+              <tr key={`${gacha.gacha_time}-${index}`} className="border-b border-amber-800 bg-amber-100 text-gray-500">
                 <td className="px-4 py-2">{gacha.part_outfit || '-'}</td>
                 <td className="px-4 py-2">
                   <span className={`${gacha.rarity === 'SSR' ? 'text-yellow-600' : gacha.rarity === 'SR' ? 'text-purple-500' : ''}`}>
@@ -152,7 +145,6 @@ const HistoryGacha = ({ gachaType }: { gachaType: string }) => { // Terima props
           </tbody>
         </table>
 
-        {/* Pagination */}
         <div className="flex justify-center mt-4">
           {paginationRange()?.map((pageNumber, index) => (
             <button
@@ -161,8 +153,8 @@ const HistoryGacha = ({ gachaType }: { gachaType: string }) => { // Terima props
               className={`px-3 py-1 rounded-md mx-1 ${currentPage === pageNumber
                 ? "bg-blue-500 text-white"
                 : "bg-gray-200 text-gray-600"
-                } ${pageNumber === -1 ? "pointer-events-none" : ""}`} // Nonaktifkan klik pada "..."
-              disabled={pageNumber === -1} // Nonaktifkan tombol "..."
+                } ${pageNumber === -1 ? "pointer-events-none" : ""}`}
+              disabled={pageNumber === -1}
             >
               {pageNumber === -1 ? "..." : pageNumber}
             </button>
@@ -171,6 +163,6 @@ const HistoryGacha = ({ gachaType }: { gachaType: string }) => { // Terima props
       </div>
     </>
   );
-}
+};
 
 export default HistoryGacha;
