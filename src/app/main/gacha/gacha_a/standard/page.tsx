@@ -223,8 +223,26 @@ const Standard_A = () => {
         }
     }
 
-    // Inisialisasi generator MCRNG dengan seed
-    let random = multiplicativeCRNG(Date.now());
+    function xorshift32(state: number) {
+        state ^= state << 13;
+        state ^= state >> 17;
+        state ^= state << 5;
+        return state;
+    }
+
+    function combinedRandom(seed: number) {
+        const mcrng = multiplicativeCRNG(seed);
+        let xorshiftState = seed; // Use seed as initial state for Xorshift
+
+        return function () {
+            const mcrngOutput = mcrng();
+            xorshiftState = xorshift32(xorshiftState ^ mcrngOutput); // XOR MCRNG output with Xorshift state
+            return (xorshiftState >>> 0) / Math.pow(2, 32); // Return unsigned Xorshift state normalized to 0-1
+        };
+    }
+
+    // Usage
+    let random = combinedRandom(Date.now());
 
     class GachaSystem {
         static PITY_HARD_SSR = 80;
@@ -312,6 +330,7 @@ const Standard_A = () => {
 
         calculateRarity() {
             const rand = random(); // Use MCRNG generator
+            console.log('random : ', rand);
             if (rand < ProbabilitySSRNow || (standard_pity + 1) >= GachaSystem.PITY_THRESHOLD) {
                 return "SSR";
             } else if (rand < ProbabilitySRNow || (this.srPity + 1) % 10 === 0) {
