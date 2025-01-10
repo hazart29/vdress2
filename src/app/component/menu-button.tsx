@@ -8,6 +8,7 @@ export default function MenuButton() {
         if (menu === 'logout') {
             // Clear session token from sessionStorage
             sessionStorage.removeItem('token');
+            localStorage.removeItem('token');
             sessionStorage.removeItem('uid');
             localStorage.removeItem('uid');
 
