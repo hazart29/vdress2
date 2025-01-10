@@ -29,7 +29,7 @@ const Standard_A = () => {
     const [showExchangeModal, setShowExchangeModal] = useState(false);
     const [exchangeAmount, setExchangeAmount] = useState(0);
     const { refresh } = useRefresh();
-    const uid: any = sessionStorage.getItem('uid'); // Pastikan uid tersedia
+    const uid: any = localStorage.getItem('uid'); // Pastikan uid tersedia
     const [isLoading, setIsLoading] = useState(false);
     let tenpull: GachaItem[] = [];
     let baseSSRProbability = 0.0075; // 0.75%

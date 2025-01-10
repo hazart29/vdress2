@@ -15,7 +15,7 @@ const CurrencyResource: React.FC<CurrencyResourceProps> = ({ activeTab }) => {
     const [userData, setUserData] = useState<User_resources | null>(null);
     const router = useRouter();
     const { refresh } = useRefresh();
-    const uid: any = sessionStorage.getItem('uid');
+    const uid: any = localStorage.getItem('uid');
 
     const getData = async (uid: UUID) => {
         try {

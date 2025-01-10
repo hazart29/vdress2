@@ -15,7 +15,7 @@ const HistoryGacha = ({ gachaType }: { gachaType: string }) => {
 
   const fetchHistoryApi = async (typeFetch: string, dataFetch?: any) => {
     try {
-      const uid = sessionStorage.getItem('uid');
+      const uid = localStorage.getItem('uid');
 
       const requestBody = {
         uid: uid!,

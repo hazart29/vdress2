@@ -19,7 +19,7 @@ const Login: React.FC = () => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      //  Ambil token JWT dari sessionStorage atau cookie
+      //  Ambil token JWT dari Storage atau cookie
       const token = localStorage.getItem('token'); 
       if (token) {
         // Jika ada token, redirect ke halaman /main
@@ -54,10 +54,8 @@ const Login: React.FC = () => {
 
       if (res.ok) {
         // Login berhasil
-        sessionStorage.setItem('token', data.token); // Simpan token di sessionStorage
-        localStorage.setItem('token', data.token); // Simpan token di sessionStorage
-        sessionStorage.setItem('uid', data.user.uid); // Simpan token di sessionStorage
-        localStorage.setItem('uid', data.user.uid); // Simpan token di sessionStorage
+        localStorage.setItem('token', data.token); // Simpan token di Storage
+        localStorage.setItem('uid', data.user.uid); // Simpan token di Storage
         router.push('/main');
       } else {
         // Tangani error dari API

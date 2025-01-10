@@ -75,7 +75,7 @@ export default function TopUp() {
     };
 
     try {
-      const uid = sessionStorage.getItem('uid');
+      const uid = localStorage.getItem('uid');
       if (!uid) {
         throw new Error("User ID not found");
       }

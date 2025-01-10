@@ -24,7 +24,7 @@ const CanvasComponent: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [outfitData, setOutfitData] = useState<Inventory[]>([]);
   const loading = '/ui/iconVD.svg';
-  const uid = sessionStorage.getItem('uid');
+  const uid = localStorage.getItem('uid');
   const password = process.env.SJCL_PASSWORD || 'virtualdressing';
 
   const changeOutfit = (newOutfit: { layer: string, item_name: string }) => {
@@ -94,7 +94,7 @@ const CanvasComponent: React.FC = () => {
 
   const fetchData = async (action: string, dataFetch?: any) => {
     try {
-      const uid = sessionStorage.getItem('uid');
+      const uid = localStorage.getItem('uid');
       if (!uid) throw new Error("User ID not found");
 
       const encryptedData = sjcl.encrypt(password, JSON.stringify({ action, uid, ...dataFetch }));

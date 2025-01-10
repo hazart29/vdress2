@@ -30,7 +30,7 @@ const Limited_A = () => {
     const [exchangeAmount, setExchangeAmount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const { refresh } = useRefresh();
-    const uid: any = sessionStorage.getItem('uid'); // Pastikan uid tersedia
+    const uid: any = localStorage.getItem('uid'); // Pastikan uid tersedia
     let tenpull: GachaItem[] = [];
     let baseSSRProbability = 0.0075; // 0.75%
     let baseSRProbability = 0.01;    // 1%

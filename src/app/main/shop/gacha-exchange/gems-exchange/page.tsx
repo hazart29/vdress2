@@ -28,7 +28,7 @@ export default function GemsExchange() {
   const [exchangeSuccess, setExchangeSuccess] = useState(false);
   const { refresh } = useRefresh();
 
-  const uid: any = sessionStorage.getItem('uid');
+  const uid: any = localStorage.getItem('uid');
 
   const handleExchange = (essenceType: "shimmering_essence" | "glimmering_essence") => {
     setSelectedEssence(essenceType);
@@ -71,7 +71,7 @@ export default function GemsExchange() {
 
   const fetchApi = async (typeFetch: string, dataFetch?: any) => {
     try {
-      const uid = sessionStorage.getItem('uid');
+      const uid = localStorage.getItem('uid');
 
       if (!uid) {
         throw new Error("User ID not found");

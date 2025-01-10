@@ -23,7 +23,7 @@ export default function TokenShop() {
   const [userData, setUserData] = useState<User_resources | null>(null);
   let isItemInInventory: boolean;
 
-  const uid: any = sessionStorage.getItem('uid');
+  const uid: any = localStorage.getItem('uid');
 
   const handleSelectItem = (item: TokenItems) => {
     setSelectedItem(item);
@@ -147,7 +147,7 @@ export default function TokenShop() {
   const fetchInventoryItems = async () => {
     try {
       if (!uid) {
-        console.error("User ID not found in sessionStorage");
+        console.error("User ID not found in Storage");
         return;
       }
 
