@@ -67,7 +67,7 @@ const ShopLayout = ({ children }: { children: React.ReactNode }) => {
                     </div>
 
                     {/* Main Content Area */}
-                    <main className="container relative z-10 flex flex-1 h-full pt-14 flex-col bg-black/40 backdrop-blur-md">
+                    <main className="container relative z-10 flex flex-1 h-full pt-14 flex-col bg-black/40 backdrop-blur-md overflow-x-scroll">
                         {children}
                     </main>
                 </div>
