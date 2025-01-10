@@ -152,7 +152,7 @@ export default function GemsExchange() {
               height={28}
             />
             {/* Menampilkan nilai glamour_gems jika userResources tersedia */}
-            <p>160</p>
+            <p>150</p>
           </div>
         </button>
       ) : (
@@ -181,7 +181,7 @@ export default function GemsExchange() {
               height={28}
             />
             {/* Menampilkan nilai glamour_gems jika userResources tersedia */}
-            <p>160</p>
+            <p>150</p>
           </div>
         </button>
       )}
@@ -202,7 +202,7 @@ export default function GemsExchange() {
               <input
                 type="number"
                 min="0"
-                max={userResources.glamour_gems ? Math.floor(userResources.glamour_gems / 160) : 0}
+                max={userResources.glamour_gems ? Math.floor(userResources.glamour_gems / 150) : 0}
                 id="essence"
                 name="essence"
                 className="flex flex-1 w-full border-gray-300 bg-gray-200 rounded-md p-2 text-black text-md lg:text-lg"
@@ -217,7 +217,7 @@ export default function GemsExchange() {
               <input
                 type="range"
                 min="0"
-                max={userResources.glamour_gems ? Math.floor(userResources.glamour_gems / 160) : 0}
+                max={userResources.glamour_gems ? Math.floor(userResources.glamour_gems / 150) : 0}
                 id="essence-range"
                 name="essence-range"
                 className="flex flex-1 w-full"

@@ -141,7 +141,7 @@ const Limited_A = () => {
         const essenceCost = a === 1 ? 1 : 10;
 
         if (userData.user_resources[0].glimmering_essence < essenceCost) {
-            const gemsNeeded = essenceCost * 160;
+            const gemsNeeded = essenceCost * 150;
             console.log('gems now : ', userData.user_resources[0].glamour_gems)
             if (userData.user_resources[0].glamour_gems < gemsNeeded) {
                 setIsInsufficientModalOpen(true);
@@ -171,7 +171,7 @@ const Limited_A = () => {
         try {
             await fetchGachaApi('exchangeGemsForEssence', {
                 type: 'glimmering_essence',
-                glamour_gems: (exchangeAmount * 160).toString(),
+                glamour_gems: (exchangeAmount * 150).toString(),
                 glimmering_essence: exchangeAmount.toString()
             });
             await fetchGachaApi("getUserData", null);
@@ -699,7 +699,7 @@ const Limited_A = () => {
                         <div className="p-4 flex flex-col flex-none w-2/5 justify-center items-center bg-white rounded-lg py-8">
                             <p className="text-black mb-4 text-center">
                                 Glimmering Essence tidak cukup! <br />
-                                Tukarkan <span className="text-amber-400">{exchangeAmount * 160} Glamour Gems</span> dengan <span className="text-blue-400">{exchangeAmount} Glimmering Essence</span>?
+                                Tukarkan <span className="text-amber-400">{exchangeAmount * 150} Glamour Gems</span> dengan <span className="text-blue-400">{exchangeAmount} Glimmering Essence</span>?
                             </p>
                             <div className="flex gap-4">
                                 <button
