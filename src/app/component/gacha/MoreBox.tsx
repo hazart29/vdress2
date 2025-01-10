@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import ModalBox from './ModalBox';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import HistoryGacha from './HistoryGacha';
 import InfoGacha from './InfoGacha';
 
 const MoreBox: React.FC<{ activeTab: string }> = ({ activeTab }) => {
     const [showModal, setShowModal] = useState(0);
     const router = useRouter();
+    const pathname = usePathname();
 
     const handleModalClose = () => {
         setShowModal(0);
@@ -18,7 +19,7 @@ const MoreBox: React.FC<{ activeTab: string }> = ({ activeTab }) => {
         } else {
             router.push('/main/shop/gacha-exchange/symphony-shop/');
         }
-    };    
+    };
 
     return (
         <div className="flex gap-4">
@@ -50,7 +51,7 @@ const MoreBox: React.FC<{ activeTab: string }> = ({ activeTab }) => {
             </button>
 
             <ModalBox isOpen={showModal === 2} onClose={handleModalClose} title="Limited Gacha Time">
-                <InfoGacha />
+                <InfoGacha activeTab={pathname.includes("standard") ? "standard" : "limited"} />
             </ModalBox>
 
             <ModalBox isOpen={showModal === 3} onClose={handleModalClose} title="History Gacha">
