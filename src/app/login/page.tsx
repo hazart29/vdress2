@@ -56,6 +56,7 @@ const Login: React.FC = () => {
         // Login berhasil
         sessionStorage.setItem('token', data.token); // Simpan token di sessionStorage
         sessionStorage.setItem('uid', data.user.uid); // Simpan token di sessionStorage
+        localStorage.setItem('uid', data.user.uid); // Simpan token di sessionStorage
         router.push('/main');
       } else {
         // Tangani error dari API

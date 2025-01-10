@@ -9,6 +9,7 @@ export default function MenuButton() {
             // Clear session token from sessionStorage
             sessionStorage.removeItem('token');
             sessionStorage.removeItem('uid');
+            localStorage.removeItem('uid');
 
             // Redirect to login page
             router.push('/');
