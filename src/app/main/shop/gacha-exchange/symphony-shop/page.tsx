@@ -243,7 +243,7 @@ export default function GlamourDustExchange() {
   }, []);
 
   return (
-    <div className="flex flex-wrap gap-4 px-16 justify-center">
+    <div className="flex flex-1 flex-wrap gap-4 px-16 justify-center overflow-y-scroll">
       {dustItems && dustItems.length > 0 ? (
         dustItems.map((item) => {
           // Cek apakah item dengan id 3, 4, atau 5 sudah ada di inventory

@@ -226,7 +226,7 @@ export default function TokenShop() {
   }, []);
 
   return (
-    <div className="flex flex-wrap gap-4 px-16 justify-center">
+    <div className="flex flex-1 flex-wrap gap-4 px-16 justify-center overflow-y-scroll">
       {tokenItems && tokenItems.length > 0 ? (
         tokenItems.map((item) => {
           // Cek apakah item dengan id 3, 4, atau 5 sudah ada di inventory
