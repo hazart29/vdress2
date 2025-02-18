@@ -70,11 +70,11 @@ export default function Layout({
             });
         }
 
-        if ((window.matchMedia('(display-mode: fullscreen)').matches) || (window.matchMedia('(display-mode: standalone)').matches)) {
-            setIsInstalled(true);
-        } else {
-            setIsInstalled(false);
-        }
+        // if ((window.matchMedia('(display-mode: fullscreen)').matches) || (window.matchMedia('(display-mode: standalone)').matches)) {
+        //     setIsInstalled(true);
+        // } else {
+        //     setIsInstalled(false);
+        // }
 
     }, [router]); // Add isLoading to the dependency array
 
@@ -83,9 +83,7 @@ export default function Layout({
     
     if (loading) {
         return <div className='absolute flex w-full h-full z-[999] top-0 left-0 justify-center items-center'><Image src={icon} alt="none" width={40} height={40} className='animate-ping' /></div>;
-    } else if (!isInstalled) {
-        return <PWAInstallPrompt />;
-    }
+    } 
 
     return (
         <div id="s" className="overflow-hidden flex flex-1 h-screen w-full">
