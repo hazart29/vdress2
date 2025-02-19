@@ -16,6 +16,7 @@ const GachaButton: React.FC<GachaButtonProps> = ({ onClick, activeTab }) => { //
     <div className="flex flex-1 gap-4 justify-end items-center lg:text-4xl text-base">
       {[1, 10].map((type) => (
         <button
+          aria-label="button"
           key={type}
           className="bg-white text-gray-800 font-bold py-2 px-4 rounded-md shadow-md 
                      hover:bg-gray-100 hover:scale-105 hover:-translate-y-1 hover:shadow-lg 

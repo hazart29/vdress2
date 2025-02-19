@@ -24,6 +24,7 @@ const MoreBox: React.FC<{ activeTab: string }> = ({ activeTab }) => {
     return (
         <div className="flex gap-4">
             <button
+                aria-label="button"
                 onClick={() => goToShop()}
                 className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold lg:px-6 px-4 lg:py-2 py-1 rounded-full">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" className="bi bi-cart3 lg:h-5 h-3" viewBox="0 0 16 16">
@@ -32,6 +33,7 @@ const MoreBox: React.FC<{ activeTab: string }> = ({ activeTab }) => {
             </button>
 
             <button
+                aria-label="button"
                 onClick={() => setShowModal(2)}
                 className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold lg:px-6 px-4 lg:py-2 py-1 rounded-full">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" className="bi bi-info-circle lg:h-5 h-3" viewBox="0 0 16 16">
@@ -41,6 +43,7 @@ const MoreBox: React.FC<{ activeTab: string }> = ({ activeTab }) => {
             </button>
 
             <button
+                aria-label="button"
                 onClick={() => setShowModal(3)}
                 className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold lg:px-6 px-4 lg:py-2 py-1 rounded-full">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" className="bi bi-clock-history lg:h-5 h-3" viewBox="0 0 16 16">

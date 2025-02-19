@@ -249,7 +249,7 @@ const Standard_A = () => {
         static PITY_SOFT_SSR = 60; // Soft standard_pity for increased SSR chance
         static PITY_SR = 10;
         static PITY_THRESHOLD = 80;
-        static SSR_DUPLICATE_DUSTS = 10;  // Example value
+        static SSR_DUPLICATE_DUSTS = 10;  // value
         static SR_DUPLICATE_DUSTS = 2;
         static SSR_NEW_ITEM_DUSTS = 1;
         static SR_NEW_ITEM_DUSTS = 1;

@@ -14,7 +14,7 @@ const config: Config = {
           "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
         "hero-patterns": "url('/background/bubbles.svg')",
         "room": "url('/background/bgroom.svg')",
-        "gacha1": "url('/banner/limited/gacha1.svg')",
+        "gacha1": "url('/banner/limited/gacha1.webp')",
         "gacha2": "url('/banner/standard/gacha2.svg')",
         "shop": "url('/background/shop/3d-fantasy-scene.svg')",
       },
