@@ -258,8 +258,8 @@ const Limited_A = () => {
         static PITY_SOFT_SSR = 60; // Soft pity for increased SSR chance
         static PITY_SR = 10;
         static PITY_THRESHOLD = 80;
-        static SSR_DUPLICATE_TOKENS = 10;  // Example value
-        static SR_DUPLICATE_TOKENS = 2;
+        static SSR_DUPLICATE_TOKENS = 11;  // Example value
+        static SR_DUPLICATE_TOKENS = 3;
         static SSR_NEW_ITEM_TOKENS = 1;
         static SR_NEW_ITEM_TOKENS = 1;
         srPity: number = 0;  // Track SR pity
@@ -547,10 +547,10 @@ const Limited_A = () => {
             return {
                 tokens:
                     rarity === "SR"
-                        ? (isDuplicate ? '+2' : '+1')
+                        ? (isDuplicate ? '+3' : '+1')
                         : (rarity === "SSR"
                             ? (isDuplicate ? '+11' : '+1')
-                            : (rarity === "R" ? '+1' : '')),
+                            : (rarity === "R" ? '+1' : '+1')),
             };
 
         }).filter(resource => resource.tokens !== '');

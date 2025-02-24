@@ -4,12 +4,14 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import PWAInstallPrompt from './component/PWAInstallPompt';
 import { useRouter } from 'next/navigation';
+import MobileLandingPage from './component/MobileLandingPage';
 
 function Home() {
   const icon = '/ui/iconVD.svg';
   const [isLoading, setLoading] = useState(true);
   const [isInstalled, setIsInstalled] = useState<boolean>(false);
   const router = useRouter(); // Add the useRouter hook
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -22,15 +24,18 @@ function Home() {
       });
     }
 
-    // if ((window.matchMedia('(display-mode: fullscreen)').matches) || (window.matchMedia('(display-mode: standalone)').matches)) {
-    //   setIsInstalled(true);
-    // } else {
-    //   setIsInstalled(false);
-    // }
+    if ((window.matchMedia('(display-mode: fullscreen)').matches) || (window.matchMedia('(display-mode: standalone)').matches)) {
+      setIsInstalled(true);
+    } else {
+      setIsInstalled(false);
+    }
+
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|Windows Phone/i.test(navigator.userAgent);
+    setIsMobile(isMobileDevice);
 
     // Redirect to /login after loading and checking installation
     const redirectToLogin = () => {
-      if (!isLoading === true) {
+      if (!isLoading && isInstalled) {
         router.push('/login');
       }
     };
@@ -49,9 +54,11 @@ function Home() {
 
   // The PWAInstallPrompt component will not be rendered since the user is 
   // immediately redirected to /login
-  // if (!isInstalled) { 
-  //   return <PWAInstallPrompt />; 
-  // }
+  if (isMobile) {
+    return <MobileLandingPage />; // Render the mobile landing page
+  } else if (!isInstalled) {
+    return <PWAInstallPrompt />;
+  }
 
 }
 

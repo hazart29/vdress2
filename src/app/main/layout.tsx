@@ -7,18 +7,20 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Backsound from "../component/backsound";
 import PWAInstallPrompt from "../component/PWAInstallPompt";
+import MobileLandingPage from "../component/MobileLandingPage";
 
 export default function Layout({
     children,
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    
+
     const router = useRouter();
     const [loading, isloading] = useState(true);
     const icon = '/ui/iconVD.svg';
     const currentUrl = usePathname();
     const [isInstalled, setIsInstalled] = useState<boolean>(false);
+    const [isMobile, setIsMobile] = useState(false);
 
     // Check if user is authenticated
 
@@ -70,20 +72,26 @@ export default function Layout({
             });
         }
 
-        // if ((window.matchMedia('(display-mode: fullscreen)').matches) || (window.matchMedia('(display-mode: standalone)').matches)) {
-        //     setIsInstalled(true);
-        // } else {
-        //     setIsInstalled(false);
-        // }
+        if ((window.matchMedia('(display-mode: fullscreen)').matches) || (window.matchMedia('(display-mode: standalone)').matches)) {
+            setIsInstalled(true);
+        } else {
+            setIsInstalled(false);
+        }
 
-    }, [router]); // Add isLoading to the dependency array
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|Windows Phone/i.test(navigator.userAgent);
+        setIsMobile(isMobileDevice);
+
+    }, [router, isInstalled, loading]); // Add isLoading to the dependency array
 
     // The PWAInstallPrompt component will not be rendered since the user is 
     // immediately redirected to /login
-    
     if (loading) {
         return <div className='absolute flex w-full h-full z-[999] top-0 left-0 justify-center items-center'><Image src={icon} alt="none" width={40} height={40} className='animate-ping' /></div>;
-    } 
+    } else if (isMobile) {
+        return <MobileLandingPage />; // Render the mobile landing page
+    } else if (!isInstalled) {
+        return <PWAInstallPrompt />;
+    }
 
     return (
         <div id="s" className="overflow-hidden flex flex-1 h-screen w-full">

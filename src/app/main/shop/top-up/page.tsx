@@ -148,10 +148,10 @@ export default function TopUp() {
               onClick={() => handlePackageSelect(pkg)}
             >
               <h2 className="text-lg font-semibold">{pkg.name}</h2>
-              <p className="text-gray-600 flex gap-1">
+              <span className="text-gray-600 flex gap-1">
                 <p>IDR.</p>
                 {pkg.price}
-              </p>
+              </span>
               <p className="text-gray-600">{pkg.glamour_gems} Glamour Gems</p>
             </div>
           ))}
